@@ -64,15 +64,14 @@ export function SidebarItem({ icon, label, active = false, t, onClick }: { icon:
   );
 }
 
-export function ActionItem({ icon, label, t, index = 0, onClick }: { icon: React.ReactNode, label: string, t: ThemeConfig, index?: number, onClick?: () => void }) {
+export function ActionItem({ icon, label, t, index = 0, onClick, className = "" }: { icon: React.ReactNode, label: string, t: ThemeConfig, index?: number, onClick?: () => void, className?: string }) {
   return (
     <motion.button 
       onClick={onClick}
       initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-10px" }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className="flex flex-col items-center gap-1.5 group active:scale-95 transition-transform min-w-0"
+      className={`flex flex-col items-center gap-1.5 group active:scale-95 transition-transform min-w-0 ${className}`}
     >
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow transition-all duration-300 ${t.primaryLightBg} ${t.primaryText} shrink-0`}>
         {icon}
@@ -83,6 +82,7 @@ export function ActionItem({ icon, label, t, index = 0, onClick }: { icon: React
 }
 
 import { Share2 } from 'lucide-react';
+import { LazyImage } from './LazyImage';
 
 export function NewsCard({ title, date, image, index = 0, onClick, link }: { title: string, date: string, image: string, index?: number, onClick?: () => void, link?: string }) {
   const handleShare = (e: React.MouseEvent) => {
@@ -107,11 +107,10 @@ export function NewsCard({ title, date, image, index = 0, onClick, link }: { tit
       transition={{ duration: 0.3, delay: index * 0.1 }}
       className="bg-white p-2.5 rounded-xl shadow-sm flex gap-3 items-center active:scale-[0.98] transition-transform cursor-pointer border border-gray-100 hover:shadow relative group"
     >
-      <img 
+      <LazyImage 
         src={image} 
         alt={title} 
-        className="w-16 h-16 rounded-lg object-cover bg-gray-200 shrink-0"
-        referrerPolicy="no-referrer"
+        containerClassName="w-16 h-16 rounded-lg shrink-0"
       />
       <div className="flex-1 min-w-0 pr-6">
         <h4 className="font-semibold text-gray-800 text-xs leading-snug line-clamp-2 mb-1">{title}</h4>

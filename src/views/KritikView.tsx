@@ -4,7 +4,7 @@ import { ArrowLeft, MessageSquare, Send, CheckCircle2, AlertCircle } from 'lucid
 import { ThemeConfig } from '../types';
 import { useData, SCRIPT_URL } from '../context/DataContext';
 
-export function KritikView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
+export function KritikView({ t, onBack, title }: { t: ThemeConfig, onBack: () => void, title?: string }) {
   const { refreshData } = useData();
   const [isSent, setIsSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +79,7 @@ export function KritikView({ t, onBack }: { t: ThemeConfig, onBack: () => void }
         <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h2 className="font-bold text-lg">Kritik & Saran</h2>
+        <h2 className="font-bold text-lg">{title || "Kritik & Saran"}</h2>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">

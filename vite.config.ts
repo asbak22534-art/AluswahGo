@@ -14,25 +14,25 @@ export default defineConfig(({mode}) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'MIS IT Al Uswah',
-          short_name: 'Al Uswah',
-          description: 'Portal Sekolah MIS IT Al Uswah Pasirian',
+          name: 'AluswahGO',
+          short_name: 'AluswahGO',
+          description: 'Portal Sekolah AluswahGO',
           theme_color: '#0d9488',
           background_color: '#ffffff',
           display: 'standalone',
           icons: [
             {
-              src: 'https://lh3.googleusercontent.com/a/ACg8ocLjDVk3HM6HfZrRk4kJAwJveT-6ZvIEr97Ky1y_vL0a2L6Nhd4=s400-c',
+              src: 'https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'https://lh3.googleusercontent.com/a/ACg8ocLjDVk3HM6HfZrRk4kJAwJveT-6ZvIEr97Ky1y_vL0a2L6Nhd4=s400-c',
+              src: 'https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'https://lh3.googleusercontent.com/a/ACg8ocLjDVk3HM6HfZrRk4kJAwJveT-6ZvIEr97Ky1y_vL0a2L6Nhd4=s400-c',
+              src: 'https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'

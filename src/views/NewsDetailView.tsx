@@ -7,7 +7,12 @@ export function NewsDetailView({ t, news, onBack, title = "Detail Berita" }: { t
   if (!news) return null;
 
   // Extract text from HTML description if content is not available
-  const content = news.content || news.description;
+  let content = news.content || news.description;
+  
+  // Optimize images in HTML content by adding lazy loading
+  if (content) {
+    content = content.replace(/<img /g, '<img loading="lazy" ');
+  }
 
   const handleShare = () => {
     if (navigator.share && news.link) {

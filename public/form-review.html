@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Review Sekolah</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind Config & Custom Styles -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#0d9488', // Teal 600
+                        primaryHover: '#0f766e', // Teal 700
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Smooth transitions */
+        .fade-enter {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .fade-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 300ms, transform 300ms;
+        }
+        .fade-exit {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .fade-exit-active {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 300ms, transform 300ms;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col items-center py-10 px-4">
+
+    <div class="w-full max-w-2xl mx-auto">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-teal-100 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <i data-lucide="message-square-heart" class="w-8 h-8"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Beri Ulasan Anda</h1>
+            <p class="text-gray-500">Masukan Anda sangat berarti bagi perkembangan sekolah kami.</p>
+        </div>
+
+        <!-- Role Selection Cards -->
+        <div id="role-selection" class="grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-500">
+            <!-- Card Alumni -->
+            <div onclick="selectRole('Alumni')" class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md border border-gray-100 hover:border-primary cursor-pointer transition-all duration-300 transform hover:-translate-y-1 group text-center">
+                <div class="w-20 h-20 bg-gray-50 group-hover:bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
+                    <i data-lucide="graduation-cap" class="w-10 h-10 text-gray-400 group-hover:text-primary transition-colors"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-1">Alumni</h3>
+                <p class="text-sm text-gray-500">Saya adalah lulusan dari sekolah ini.</p>
+            </div>
+
+            <!-- Card Wali Murid -->
+            <div onclick="selectRole('Wali Murid')" class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md border border-gray-100 hover:border-primary cursor-pointer transition-all duration-300 transform hover:-translate-y-1 group text-center">
+                <div class="w-20 h-20 bg-gray-50 group-hover:bg-teal-50 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
+                    <i data-lucide="users" class="w-10 h-10 text-gray-400 group-hover:text-primary transition-colors"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-1">Wali Murid</h3>
+                <p class="text-sm text-gray-500">Saya adalah orang tua/wali dari siswa.</p>
+            </div>
+        </div>
+
+        <!-- Form Container (Hidden Initially) -->
+        <div id="form-container" class="hidden bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 transition-all duration-500">
+            
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                <h2 id="form-title" class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-5 h-5 text-primary"></i>
+                    Form Ulasan
+                </h2>
+                <button onclick="resetToSelection()" class="text-sm text-gray-500 hover:text-primary flex items-center gap-1 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-50">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali
+                </button>
+            </div>
+
+            <form id="review-form" onsubmit="submitReview(event)" class="space-y-6">
+                
+                <!-- WALI MURID SPECIFIC FIELDS -->
+                <div id="wali-fields" class="hidden space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Wali <span class="text-red-500">*</span></label>
+                        <input type="text" id="namaWali" placeholder="Nama Lengkap Anda" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all bg-gray-50 focus:bg-white">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status Wali <span class="text-red-500">*</span></label>
+                        <div class="flex items-center gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer group">
+                                <input type="radio" name="statusWali" value="Ayah" class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                                <span class="text-gray-700 group-hover:text-primary transition-colors">Ayah</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer group">
+                                <input type="radio" name="statusWali" value="Bunda" class="w-4 h-4 text-primary focus:ring-primary border-gray-300">
+                                <span class="text-gray-700 group-hover:text-primary transition-colors">Bunda</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SHARED / DYNAMIC FIELDS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label id="label-nama-siswa" class="block text-sm font-medium text-gray-700 mb-1">Nama Siswa <span class="text-red-500">*</span></label>
+                        <select id="namaSiswa" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all bg-gray-50 focus:bg-white appearance-none">
+                            <option value="" disabled selected>Pilih Nama</option>
+                            <!-- Mock Data -->
+                            <option value="Ahmad Budi">Ahmad Budi</option>
+                            <option value="Siti Aminah">Siti Aminah</option>
+                            <option value="Bima Sakti">Bima Sakti</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label id="label-kelas" class="block text-sm font-medium text-gray-700 mb-1">Kelas <span class="text-red-500">*</span></label>
+                        <select id="kelas" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all bg-gray-50 focus:bg-white appearance-none">
+                            <option value="" disabled selected>Pilih Kelas</option>
+                            <option value="1A">1A</option><option value="1B">1B</option>
+                            <option value="2A">2A</option><option value="2B">2B</option>
+                            <option value="3A">3A</option><option value="3B">3B</option>
+                            <option value="4A">4A</option><option value="4B">4B</option>
+                            <option value="5A">5A</option><option value="5B">5B</option>
+                            <option value="6A">6A</option><option value="6B">6B</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- ALUMNI SPECIFIC FIELDS -->
+                <div id="alumni-fields" class="hidden">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tahun Lulus <span class="text-red-500">*</span></label>
+                        <input type="number" id="tahunLulus" placeholder="Contoh: 2023" min="2000" max="2099" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all bg-gray-50 focus:bg-white">
+                    </div>
+                </div>
+
+                <!-- RATING UI -->
+                <div class="pt-4 border-t border-gray-100">
+                    <label class="block text-sm font-medium text-gray-700 mb-3 text-center">Penilaian Anda <span class="text-red-500">*</span></label>
+                    <div class="flex items-center justify-center gap-2" id="star-container">
+                        <!-- Stars generated by JS -->
+                    </div>
+                    <div id="rating-text" class="text-center text-sm font-medium text-gray-500 mt-2 h-5"></div>
+                </div>
+
+                <!-- TESTIMONI -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Pesan / Testimoni <span class="text-red-500">*</span></label>
+                    <textarea id="testimoni" rows="4" placeholder="Ceritakan pengalaman Anda..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all bg-gray-50 focus:bg-white resize-none"></textarea>
+                </div>
+
+                <!-- ERROR MESSAGE -->
+                <div id="error-msg" class="hidden text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg"></div>
+
+                <!-- SUBMIT BUTTON -->
+                <button type="submit" id="btn-submit" class="w-full py-4 bg-primary hover:bg-primaryHover text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    <span>Kirim Ulasan</span>
+                </button>
+
+            </form>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
+            <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl transform transition-all scale-95 opacity-0" id="success-modal-content">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <i data-lucide="check-circle-2" class="w-10 h-10 text-green-500"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Terima Kasih!</h3>
+                <p class="text-gray-500 mb-6">Ulasan Anda telah berhasil dikirim dan akan segera kami tinjau.</p>
+                <button onclick="closeSuccessModal()" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-xl transition-colors">
+                    Tutup
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // State
+        let currentRole = '';
+        let currentRating = 0;
+        let hoverRating = 0;
+
+        const ratingTexts = {
+            1: 'Sangat Kurang',
+            2: 'Kurang',
+            3: 'Cukup',
+            4: 'Baik',
+            5: 'Sangat Baik'
+        };
+
+        // Initialize Stars
+        function renderStars() {
+            const container = document.getElementById('star-container');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= 5; i++) {
+                const starBtn = document.createElement('button');
+                starBtn.type = 'button';
+                starBtn.className = 'p-1 transition-transform hover:scale-110 focus:outline-none group';
+                
+                // Determine color
+                const isActive = (hoverRating || currentRating) >= i;
+                const colorClass = isActive ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 fill-transparent';
+                
+                starBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-colors duration-200 ${colorClass}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+                
+                starBtn.onmouseenter = () => { hoverRating = i; renderStars(); updateRatingText(); };
+                starBtn.onmouseleave = () => { hoverRating = 0; renderStars(); updateRatingText(); };
+                starBtn.onclick = () => { currentRating = i; renderStars(); updateRatingText(); };
+                
+                container.appendChild(starBtn);
+            }
+        }
+
+        function updateRatingText() {
+            const textEl = document.getElementById('rating-text');
+            const activeRating = hoverRating || currentRating;
+            textEl.textContent = activeRating > 0 ? ratingTexts[activeRating] : '';
+        }
+
+        // Initial render
+        renderStars();
+
+        // Role Selection Logic
+        function selectRole(role) {
+            currentRole = role;
+            
+            // UI Transitions
+            const selectionDiv = document.getElementById('role-selection');
+            const formDiv = document.getElementById('form-container');
+            
+            selectionDiv.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                selectionDiv.classList.add('hidden');
+                formDiv.classList.remove('hidden');
+                // Trigger reflow
+                void formDiv.offsetWidth;
+                formDiv.classList.add('fade-enter-active');
+            }, 300);
+
+            // Update Form Fields based on Role
+            document.getElementById('form-title').innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-primary"></i> Form Ulasan ${role}`;
+            lucide.createIcons();
+
+            const alumniFields = document.getElementById('alumni-fields');
+            const waliFields = document.getElementById('wali-fields');
+            
+            if (role === 'Alumni') {
+                alumniFields.classList.remove('hidden');
+                waliFields.classList.add('hidden');
+                document.getElementById('label-nama-siswa').innerHTML = 'Nama Anda <span class="text-red-500">*</span>';
+                document.getElementById('label-kelas').innerHTML = 'Kelas Terakhir <span class="text-red-500">*</span>';
+                document.getElementById('namaSiswa').options[0].text = 'Pilih Nama Anda';
+            } else {
+                alumniFields.classList.add('hidden');
+                waliFields.classList.remove('hidden');
+                document.getElementById('label-nama-siswa').innerHTML = 'Nama Siswa <span class="text-red-500">*</span>';
+                document.getElementById('label-kelas').innerHTML = 'Kelas <span class="text-red-500">*</span>';
+                document.getElementById('namaSiswa').options[0].text = 'Pilih Nama Anak';
+            }
+        }
+
+        function resetToSelection() {
+            const selectionDiv = document.getElementById('role-selection');
+            const formDiv = document.getElementById('form-container');
+            
+            formDiv.classList.remove('fade-enter-active');
+            formDiv.classList.add('opacity-0');
+            
+            setTimeout(() => {
+                formDiv.classList.add('hidden');
+                formDiv.classList.remove('opacity-0');
+                
+                selectionDiv.classList.remove('hidden');
+                // Trigger reflow
+                void selectionDiv.offsetWidth;
+                selectionDiv.classList.remove('opacity-0', 'scale-95');
+                
+                // Reset Form Data
+                document.getElementById('review-form').reset();
+                currentRole = '';
+                currentRating = 0;
+                renderStars();
+                updateRatingText();
+                document.getElementById('error-msg').classList.add('hidden');
+            }, 300);
+        }
+
+        // Form Submission Logic
+        async function submitReview(event) {
+            event.preventDefault();
+            const errorMsg = document.getElementById('error-msg');
+            errorMsg.classList.add('hidden');
+
+            // 1. Gather Data
+            const namaSiswa = document.getElementById('namaSiswa').value;
+            const kelas = document.getElementById('kelas').value;
+            const testimoni = document.getElementById('testimoni').value.trim();
+            
+            let namaWali = "";
+            let statusWali = "";
+            let tahunLulus = "";
+
+            // 2. Validation
+            if (currentRole === 'Wali Murid') {
+                namaWali = document.getElementById('namaWali').value.trim();
+                const statusWaliEl = document.querySelector('input[name="statusWali"]:checked');
+                statusWali = statusWaliEl ? statusWaliEl.value : "";
+                
+                if (!namaWali || !statusWali || !namaSiswa || !kelas || currentRating === 0 || !testimoni) {
+                    showError("Mohon lengkapi semua field dan berikan rating bintang.");
+                    return;
+                }
+            } else if (currentRole === 'Alumni') {
+                tahunLulus = document.getElementById('tahunLulus').value;
+                if (!namaSiswa || !kelas || !tahunLulus || currentRating === 0 || !testimoni) {
+                    showError("Mohon lengkapi semua field dan berikan rating bintang.");
+                    return;
+                }
+            }
+
+            // 3. Construct Payload
+            const payload = {
+                peran: currentRole,
+                namaWali: namaWali,
+                statusWali: statusWali,
+                namaSiswa: namaSiswa,
+                kelas: kelas,
+                tahunLulus: tahunLulus,
+                rating: currentRating,
+                testimoni: testimoni
+            };
+
+            console.log("Data siap dikirim:", payload);
+
+            // 4. UI Loading State
+            const btnSubmit = document.getElementById('btn-submit');
+            const originalBtnText = btnSubmit.innerHTML;
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Mengirim...`;
+            lucide.createIcons();
+
+            try {
+                // =====================================================================
+                // TODO: INTEGRASI GOOGLE APPS SCRIPT (API)
+                // 1. Ganti URL di bawah dengan URL Web App Google Apps Script Anda.
+                // 2. Uncomment blok fetch di bawah ini untuk mengaktifkan pengiriman.
+                // =====================================================================
+                
+                const API_URL = "https://script.google.com/macros/s/AKfycb.../exec"; // <-- GANTI INI
+                
+                /*
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Gunakan no-cors jika GAS tidak mengizinkan CORS
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                */
+
+                // Simulasi delay jaringan (Hapus ini jika fetch sudah aktif)
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // 5. Show Success Modal
+                showSuccessModal();
+
+            } catch (error) {
+                console.error("Error submitting form:", error);
+                showError("Terjadi kesalahan saat mengirim data. Silakan coba lagi.");
+            } finally {
+                // Restore Button State
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = originalBtnText;
+                lucide.createIcons();
+            }
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('error-msg');
+            errorMsg.textContent = message;
+            errorMsg.classList.remove('hidden');
+        }
+
+        function showSuccessModal() {
+            const modal = document.getElementById('success-modal');
+            const modalContent = document.getElementById('success-modal-content');
+            
+            modal.classList.remove('hidden');
+            // Trigger reflow
+            void modal.offsetWidth;
+            
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }
+
+        function closeSuccessModal() {
+            const modal = document.getElementById('success-modal');
+            const modalContent = document.getElementById('success-modal-content');
+            
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                resetToSelection();
+            }, 300);
+        }
+
+    </script>
+</body>
+</html>

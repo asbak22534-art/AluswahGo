@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, AlertCircle, Check, Copy, Search } from 'lucide-react';
 import { ThemeConfig } from '../types';
 import { databaseWilayah } from '../utils/wilayah';
-import { SCRIPT_URL } from '../context/DataContext';
+
+const SPMB_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqelnYmwDkWJdUNoeduiVFza-Cx9cKb7A8Fq0vpv7sevGzCwdccQGqUdlddCQ_LquU_w/exec';
 
 function toProperCase(str: string) {
   return str.replace(/\w\S*/g, function(txt){
@@ -48,11 +49,28 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
   const [ageInfo, setAgeInfo] = useState<{ text: React.ReactNode, isUnder3: boolean } | null>(null);
   const [tapelOptions, setTapelOptions] = useState<{ value: string, label: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('Mengirim...');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'warning', content: any } | null>(null);
   const [phoneWarning, setPhoneWarning] = useState(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const phoneWarningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoading) {
+      const texts = ['Menghubungkan ke server...', 'Memverifikasi data...', 'Menyimpan pendaftaran...', 'Menyelesaikan...'];
+      let i = 0;
+      setLoadingText(texts[0]);
+      interval = setInterval(() => {
+        i = (i + 1) % texts.length;
+        setLoadingText(texts[i]);
+      }, 1500);
+    } else {
+      setLoadingText('Mengirim...');
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
   useEffect(() => {
     return () => {
       if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -64,6 +82,32 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
   const [cekToken, setCekToken] = useState('');
   const [cekResult, setCekResult] = useState<{ type: 'success' | 'error', data?: any, message?: string } | null>(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [checkingText, setCheckingText] = useState('Memeriksa...');
+  const [isCopied, setIsCopied] = useState(false);
+
+  // Pre-warming Google Apps Script
+  useEffect(() => {
+    if (SPMB_SCRIPT_URL.startsWith('https://script.google.com')) {
+      // Kirim request ringan di background untuk membangunkan server (Cold Start Mitigation)
+      fetch(`${SPMB_SCRIPT_URL}?action=ping`, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isChecking) {
+      const texts = ['Mencari token...', 'Mencocokkan data...', 'Mengambil hasil...'];
+      let i = 0;
+      setCheckingText(texts[0]);
+      interval = setInterval(() => {
+        i = (i + 1) % texts.length;
+        setCheckingText(texts[i]);
+      }, 1200);
+    } else {
+      setCheckingText('Memeriksa...');
+    }
+    return () => clearInterval(interval);
+  }, [isChecking]);
 
   // Modal Closed State
   const [closedTapel, setClosedTapel] = useState<string | null>(null);
@@ -200,7 +244,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
   const verifyTapelStatus = async (selectedTapel: string) => {
     if (!selectedTapel) return;
     try {
-      const response = await fetch(`${SCRIPT_URL}?action=checkTapel&tapel=${encodeURIComponent(selectedTapel)}`);
+      const response = await fetch(`${SPMB_SCRIPT_URL}?action=checkTapel&tapel=${encodeURIComponent(selectedTapel)}`);
       const text = await response.text();
       let result;
       try { result = JSON.parse(text); } catch (err) { return; }
@@ -262,24 +306,6 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
     setIsLoading(true);
     setStatusMsg(null);
 
-    try {
-      if (SCRIPT_URL.startsWith('https://script.google.com')) {
-        const validateUrl = `${SCRIPT_URL}?action=validate&nama=${encodeURIComponent(formData.nama_lengkap)}&tgl=${encodeURIComponent(formData.tgl_lahir)}`;
-        const response = await fetch(validateUrl);
-        const result = await response.json();
-        if (result.status === 'duplicate') {
-          setStatusMsg({
-            type: 'warning',
-            content: `<strong>DATA GANDA DITOLAK!</strong><br>Siswa atas nama <strong>${formData.nama_lengkap}</strong> sudah terdaftar di sistem kami.`
-          });
-          setIsLoading(false);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn("Validasi pre-flight gagal");
-    }
-
     const submitData = new URLSearchParams();
     Object.entries(formData).forEach(([key, value]) => {
       if (key === 'nomor_hp') submitData.append(key, '62' + String(value));
@@ -288,31 +314,48 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
     submitData.append('tanggal_lahir', formData.tgl_lahir);
     submitData.append('tahun_pelajaran', formData.tapel);
     submitData.append('timestamp', new Date().toLocaleString('id-ID'));
+    submitData.append('spreadsheetId', '10hdmoeCriiFoyccbf3Icn_QwfiYCUArMDRKcULehSqE');
+    submitData.append('sheetName', 'DB_SPMB');
+    submitData.append('action', 'register');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-      if (!SCRIPT_URL.startsWith('https://script.google.com')) {
+      if (!SPMB_SCRIPT_URL.startsWith('https://script.google.com')) {
         await new Promise(r => setTimeout(r, 1500));
         const demoToken = "DEMO-" + Math.floor(Math.random() * 10000);
         const data = { name: formData.nama_lengkap, dob: formData.tgl_lahir, token: demoToken, tapel: formData.tapel, school: formData.asal_sekolah };
         saveToHistory(data);
         setStatusMsg({ type: 'success', content: data });
       } else {
-        const response = await fetch(SCRIPT_URL, {
+        const response = await fetch(SPMB_SCRIPT_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: submitData.toString()
+          body: submitData.toString(),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         const result = await response.json();
         if (result.status === 'success') {
           const data = { name: formData.nama_lengkap, dob: formData.tgl_lahir, token: result.token, tapel: formData.tapel, school: formData.asal_sekolah };
           saveToHistory(data);
           setStatusMsg({ type: 'success', content: data });
+        } else if (result.status === 'duplicate') {
+          setStatusMsg({
+            type: 'warning',
+            content: `<strong>DATA GANDA DITOLAK!</strong><br>Siswa atas nama <strong>${formData.nama_lengkap}</strong> sudah terdaftar di sistem kami.`
+          });
         } else {
           setStatusMsg({ type: 'error', content: result.message || 'Terjadi kesalahan pada server.' });
         }
       }
-    } catch (error) {
-      setStatusMsg({ type: 'error', content: 'Terjadi kesalahan jaringan atau CORS. Silakan coba lagi.' });
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        setStatusMsg({ type: 'error', content: 'Waktu tunggu habis (15 detik). Koneksi lambat atau server sibuk, silakan coba lagi.' });
+      } else {
+        setStatusMsg({ type: 'error', content: 'Terjadi kesalahan jaringan atau CORS. Silakan coba lagi.' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -327,9 +370,15 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
     setIsChecking(true);
     setCekResult(null);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
-      if (SCRIPT_URL.startsWith('https://script.google.com')) {
-        const response = await fetch(`${SCRIPT_URL}?action=check&token=${encodeURIComponent(cekToken.trim().toUpperCase())}`);
+      if (SPMB_SCRIPT_URL.startsWith('https://script.google.com')) {
+        const response = await fetch(`${SPMB_SCRIPT_URL}?action=check&token=${encodeURIComponent(cekToken.trim().toUpperCase())}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
         const result = await response.json();
         if (result.status === 'found') {
           setCekResult({ type: 'success', data: result });
@@ -340,8 +389,12 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
         await new Promise(r => setTimeout(r, 1000));
         setCekResult({ type: 'error', message: `Data dengan token ${cekToken} tidak ada di database kami.` });
       }
-    } catch (error) {
-      setCekResult({ type: 'error', message: 'Gagal menghubungi server. Periksa koneksi internet Anda.' });
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        setCekResult({ type: 'error', message: 'Waktu tunggu habis (15 detik). Koneksi lambat atau server sibuk, silakan coba lagi.' });
+      } else {
+        setCekResult({ type: 'error', message: 'Gagal menghubungi server. Periksa koneksi internet Anda.' });
+      }
     } finally {
       setIsChecking(false);
     }
@@ -349,13 +402,14 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    showToast('Token tersalin!', 'success');
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className={`fixed inset-0 z-[100] flex flex-col items-center overflow-y-auto bg-gradient-to-br ${t.gradient} custom-scrollbar`}
+      className={`flex-1 w-full flex flex-col items-center overflow-y-auto bg-gradient-to-br ${t.gradient} custom-scrollbar relative`}
     >
       {/* Toast */}
       <AnimatePresence>
@@ -364,7 +418,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className={`fixed top-6 z-[200] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl bg-white/95 backdrop-blur-md border-l-4 ${toast.type === 'warning' ? 'border-amber-500' : toast.type === 'error' ? 'border-red-500' : 'border-emerald-500'}`}
+            className={`fixed top-6 z-[400] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl bg-white/95 backdrop-blur-md border-l-4 ${toast.type === 'warning' ? 'border-amber-500' : toast.type === 'error' ? 'border-red-500' : 'border-emerald-500'}`}
           >
             {toast.type === 'warning' && <AlertCircle className="text-amber-500" size={20} />}
             {toast.type === 'error' && <AlertCircle className="text-red-500" size={20} />}
@@ -374,7 +428,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
         )}
       </AnimatePresence>
 
-      <div className="w-full max-w-lg relative z-10 p-4 py-10 flex flex-col min-h-full">
+      <div className="w-full max-w-lg relative z-10 p-4 py-10 shrink-0">
         <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
           <X size={24} />
         </button>
@@ -391,10 +445,10 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
           </p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-2xl relative flex flex-col mb-10">
-          <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${t.gradient} z-20 rounded-t-3xl`}></div>
+        <div className="bg-white rounded-3xl shadow-2xl relative mb-10 overflow-hidden">
+          <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${t.gradient} z-20`}></div>
           
-          <div className="flex border-b border-gray-200 relative z-10 bg-gray-50 shrink-0 rounded-t-3xl overflow-hidden">
+          <div className="flex border-b border-gray-200 relative z-10 bg-gray-50 shrink-0">
             <button 
               onClick={() => setActiveTab('daftar')} 
               className={`flex-1 py-4 text-sm font-bold uppercase tracking-wider transition-all duration-300 border-b-2 ${activeTab === 'daftar' ? `${t.primaryText} border-current bg-white` : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-white'}`}
@@ -411,7 +465,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
 
           <div className="p-6">
             {activeTab === 'daftar' && (
-              <div className="animate-in fade-in duration-300">
+              <div className="transition-opacity duration-300">
                 {!statusMsg ? (
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
@@ -542,7 +596,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
 
                     <button type="submit" disabled={isLoading} className={`w-full py-4 bg-gradient-to-r ${t.gradient} text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 mt-4 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed`}>
                       {isLoading ? (
-                        <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Mengirim...</>
+                        <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> {loadingText}</>
                       ) : (
                         <>Daftar Sekarang <Check size={20} /></>
                       )}
@@ -558,10 +612,11 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
                             Ananda <strong>{statusMsg.content.name}</strong> terdaftar sebagai calon siswa inden <strong>MIS IT Al Uswah Pasirian</strong> pada Tahun Pelajaran <strong>{statusMsg.content.tapel}</strong>
                           </p>
                           <p className={`text-sm mb-3 ${t.primaryText}`}>Token pendaftaran Anda:</p>
-                          <div className="bg-white border-2 border-current rounded-xl p-4 mb-3">
-                            <p onClick={() => copyToClipboard(statusMsg.content.token)} className={`text-2xl sm:text-3xl font-bold text-center tracking-wider cursor-pointer hover:opacity-80 active:scale-95 transition-all select-none ${t.primaryText}`} title="Klik untuk menyalin token">
-                              {statusMsg.content.token}
+                          <div onClick={() => copyToClipboard(statusMsg.content.token)} className="bg-white border-2 border-current rounded-xl p-4 mb-3 relative cursor-pointer hover:opacity-80 active:scale-95 transition-all select-none group">
+                            <p className={`text-2xl sm:text-3xl font-bold text-center tracking-wider ${t.primaryText}`} title="Klik untuk menyalin token">
+                              {isCopied ? "Berhasil disalin ✅" : statusMsg.content.token}
                             </p>
+                            {!isCopied && <p className="text-xs text-center text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Klik untuk menyalin</p>}
                           </div>
                           <p className={`text-xs flex items-center justify-center gap-1 ${t.primaryText}`}>
                             <Check size={14} /> Simpan token ini sebagai bukti pendaftaran.
@@ -600,7 +655,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
             )}
 
             {activeTab === 'cek' && (
-              <div className="animate-in fade-in duration-300 text-center space-y-6 py-3">
+              <div className="transition-opacity duration-300 text-center space-y-6 py-3">
                 <div className={`w-16 h-16 ${t.primaryLightBg} rounded-full flex items-center justify-center mx-auto mb-4`}>
                   <Search className={`w-8 h-8 ${t.primaryText}`} />
                 </div>
@@ -611,31 +666,9 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
                 <div className="max-w-xs mx-auto space-y-4">
                   <input type="text" value={cekToken} onChange={e => setCekToken(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCheckToken()} placeholder="Contoh: REG25-AZ-9X2A" className={`w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-center text-gray-800 font-bold tracking-widest placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-opacity-50 transition-all outline-none uppercase ${t.primaryBg.replace('bg-', 'focus:border-').replace('600', '500')}`} />
                   <button onClick={handleCheckToken} disabled={isChecking} className={`w-full py-3 ${t.primaryBg} text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-colors active:scale-95 disabled:opacity-70 flex justify-center items-center`}>
-                    {isChecking ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div> Memeriksa...</> : 'Cek Sekarang'}
+                    {isChecking ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div> {checkingText}</> : 'Cek Sekarang'}
                   </button>
                 </div>
-                {cekResult && (
-                  <div className="mt-6 text-left">
-                    {cekResult.type === 'success' ? (
-                      <div className={`bg-white border-2 border-dashed ${t.primaryBg.replace('bg-', 'border-')} p-4 rounded-xl text-center`}>
-                        <p className="text-gray-600 mb-2">Data pendaftaran Ananda <strong className={t.primaryText}>{cekResult.data.nama}</strong> berhasil ditemukan untuk Tahun Pelajaran <strong>{cekResult.data.tapel || '(Tahun tidak terekam)'}</strong>.</p>
-                        <div onClick={() => copyToClipboard(cekResult.data.token)} className={`inline-block px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg font-mono font-bold text-lg cursor-pointer hover:bg-gray-100 ${t.primaryText}`}>
-                          {cekResult.data.token} <Copy size={16} className="inline ml-1" />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={20} />
-                          <div>
-                            <p className="text-red-800 font-bold text-sm">Token Tidak Ditemukan</p>
-                            <p className="text-red-600 text-xs mt-1">{cekResult.message}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -672,6 +705,51 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
               <button onClick={() => { setClosedTapel(null); setFormData(prev => ({ ...prev, tapel: '' })); }} className="text-gray-400 text-sm hover:text-gray-600 font-medium p-2">
                 Pilih Tahun Lain
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Cek Result Modal */}
+        {cekResult && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm"
+          >
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-center">
+              {cekResult.type === 'success' ? (
+                <>
+                  <div className={`w-16 h-16 ${t.primaryLightBg} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                    <Check className={t.primaryText} size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Terdaftar!</h3>
+                  <p className="text-gray-600 mb-4">Data pendaftaran Ananda <strong className={t.primaryText}>{cekResult.data.nama}</strong> berhasil ditemukan untuk Tahun Pelajaran <strong>{cekResult.data.tapel || '(Tahun tidak terekam)'}</strong>.</p>
+                  <p className="text-sm text-gray-500 mb-2">Silakan simpan Token Anda:</p>
+                  
+                  <div 
+                    onClick={() => copyToClipboard(cekResult.data.token)} 
+                    title="Klik untuk menyalin token"
+                    className="select-none bg-white border-2 border-dashed border-blue-500 px-6 py-3 rounded-xl font-mono text-2xl text-gray-800 cursor-pointer inline-block font-bold transition-all shadow-sm hover:bg-gray-50"
+                  >
+                    {isCopied ? "Berhasil disalin ✅" : `${cekResult.data.token} 📋`}
+                  </div>
+                  
+                  <p className="text-xs text-gray-400 mt-2 mb-6">(Klik kotak di atas untuk menyalin)</p>
+                  <button onClick={() => setCekResult(null)} className={`px-6 py-3 ${t.primaryBg} text-white font-bold rounded-xl hover:opacity-90 transition-colors w-full active:scale-95`}>
+                    Tutup
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AlertCircle className="text-red-600" size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Token Tidak Ditemukan</h3>
+                  <p className="text-gray-600 mb-6">{cekResult.message}</p>
+                  <button onClick={() => setCekResult(null)} className="px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors w-full active:scale-95">
+                    Tutup
+                  </button>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

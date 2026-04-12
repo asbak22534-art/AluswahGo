@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSU4ntYY9maYsIqtXgZ1GKA9oX8rKRRIBI6UDUNP530iqXpL9EneJv03JtytzqyydtfA/exec';
+export const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6a5GzCbHy8NjxOVF7OeGWogdLpEJlXarBDeiG_0BlHtoHDpmKbOEaIf1qzcbN2KpD/exec';
 
 export type AppData = {
   profil: Record<string, string>;
@@ -17,6 +17,7 @@ export type AppData = {
   sambutan: Record<string, string>;
   review: any[];
   video: any[];
+  karyaSiswa: any[];
   footer: Record<string, string>;
 };
 

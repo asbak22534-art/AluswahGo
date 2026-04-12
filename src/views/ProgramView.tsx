@@ -5,7 +5,7 @@ import { ThemeConfig } from '../types';
 import { Slideshow } from '../components/Slideshow';
 import { useData } from '../context/DataContext';
 
-export function ProgramView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
+export function ProgramView({ t, onBack, title }: { t: ThemeConfig, onBack: () => void, title?: string }) {
   const { data, isLoading } = useData();
   const [selectedProgram, setSelectedProgram] = useState<number | null>(null);
 
@@ -47,7 +47,7 @@ export function ProgramView({ t, onBack }: { t: ThemeConfig, onBack: () => void 
         <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h2 className="font-bold text-lg">Program Sekolah</h2>
+        <h2 className="font-bold text-lg">{title || "Program Sekolah"}</h2>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24">

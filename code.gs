@@ -5,6 +5,11 @@ function doPost(e) {
       return handleSubmitKritik(e);
     }
 
+    // 1.2 CEK APAKAH INI REQUEST DARI FORM REVIEW
+    if (e.parameter && e.parameter.action === 'submitReview') {
+      return handleSubmitReview(e);
+    }
+
     // 1.5 CEK APAKAH INI REQUEST DARI CHATBOT
     if (e.parameter && e.parameter.action === 'chatbot') {
       return handleChatbot({
@@ -19,7 +24,7 @@ function doPost(e) {
       return handleSubmitSPMB(e);
     }
 
-    // 3. JIKA BUKAN FORM, ASUMSIKAN INI REQUEST JSON DARI CHATBOT USWAH
+    // 3. JIKA BUKAN FORM, ASUMSIKAN INI REQUEST JSON DARI CHATBOT USWAH ATAU YAUMIYAH
     if (e.postData && e.postData.contents) {
       let requestData;
       try {
@@ -28,8 +33,19 @@ function doPost(e) {
         // Bukan JSON, mungkin form url-encoded yang tidak tertangkap di atas
       }
 
-      if (requestData && requestData.message) {
-        return handleChatbot(requestData);
+      if (requestData) {
+        if (requestData.action === 'checkAdminPassword') {
+          return ContentService.createTextOutput(JSON.stringify({success: checkAdminPassword(requestData.password)})).setMimeType(ContentService.MimeType.JSON);
+        }
+        if (requestData.action === 'simpanLaporan') {
+          return ContentService.createTextOutput(JSON.stringify(simpanLaporan(requestData))).setMimeType(ContentService.MimeType.JSON);
+        }
+        if (requestData.action === 'uploadFile') {
+          return ContentService.createTextOutput(JSON.stringify(uploadFile(requestData.data, requestData.fileName, requestData.teacherName, requestData.bulan, requestData.pekan))).setMimeType(ContentService.MimeType.JSON);
+        }
+        if (requestData.message) {
+          return handleChatbot(requestData);
+        }
       }
     }
 
@@ -211,6 +227,14 @@ function doGet(e) {
     // Handle specific actions if needed
     let data = [];
     switch (action) {
+      case "getDataGuru":
+        return ContentService.createTextOutput(JSON.stringify(getDataGuru())).setMimeType(ContentService.MimeType.JSON);
+      case "getAllLaporan":
+        return ContentService.createTextOutput(JSON.stringify({success: true, data: getAllLaporan()})).setMimeType(ContentService.MimeType.JSON);
+      case "getFilledWeeks":
+        return ContentService.createTextOutput(JSON.stringify(getFilledWeeks(e.parameter.nama, e.parameter.bulan))).setMimeType(ContentService.MimeType.JSON);
+      case "checkLaporan":
+        return ContentService.createTextOutput(JSON.stringify(checkLaporan(e.parameter.nama, e.parameter.bulan, e.parameter.pekan))).setMimeType(ContentService.MimeType.JSON);
       case "checkTapel":
         return ContentService.createTextOutput(JSON.stringify({
           status: "Buka"
@@ -358,8 +382,8 @@ function initializeSheets() {
       name: "Header",
       headers: ["key", "value"],
       initialData: [
-        ["logo", "https://i.ibb.co.com/ZzR8XbXy/logo.png"],
-        ["judul", "MIS IT Al Uswah"],
+        ["logo", "https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB"],
+        ["judul", "AluswahGO"],
         ["sub_judul", "Sekolah Dasar Islam"]
       ]
     },
@@ -432,22 +456,46 @@ function initializeSheets() {
       name: "Pengumuman",
       headers: ["teks", "aktif"],
       initialData: [
-        ["Selamat Datang di Portal Digital MIS IT Al Uswah. Pendaftaran Siswa Baru Tahun Ajaran 2024/2025 telah dibuka!", "TRUE"]
+        ["Selamat Datang di Portal Digital AluswahGO. Pendaftaran Siswa Baru Tahun Ajaran 2024/2025 telah dibuka!", "TRUE"]
       ]
     },
     {
       name: "Review",
-      headers: ["nama", "peran", "komentar", "rating", "foto"],
+      headers: ["Timestamp", "Peran", "Nama Wali", "Status Wali", "Nama Siswa", "Kelas", "Tahun Lulus", "Rating", "Testimoni", "Foto", "Status Tampil"],
       initialData: [
-        ["Bapak Fulan", "Wali Murid Kelas 1", "Alhamdulillah, anak saya semakin rajin sholat dan mengaji sejak bersekolah di sini.", "5", "https://picsum.photos/seed/user1/100/100"],
-        ["Ibu Fulanah", "Wali Murid Kelas 3", "Fasilitas sekolah sangat mendukung perkembangan anak.", "5", "https://picsum.photos/seed/user2/100/100"]
+        [
+          "04/04/2026 08:30:00", 
+          "Wali Murid", 
+          "Bapak Fulan", 
+          "Ayah", 
+          "Ahmad", 
+          "1A", 
+          "-", 
+          "5", 
+          "Alhamdulillah, anak saya semakin rajin sholat dan mengaji sejak bersekolah di sini.", 
+          "https://picsum.photos/seed/user1/100/100", 
+          "Approve"
+        ],
+        [
+          "04/04/2026 09:15:00", 
+          "Alumni", 
+          "-", 
+          "-", 
+          "Siti Fulanah", 
+          "6B", 
+          "2020", 
+          "5", 
+          "Bangga pernah belajar di Al Uswah. Bekal agama dan ilmu umumnya sangat bermanfaat hingga saya di bangku kuliah sekarang.", 
+          "https://picsum.photos/seed/user2/100/100", 
+          "Approve"
+        ]
       ]
     },
     {
       name: "Video",
       headers: ["judul", "url_youtube", "thumbnail"],
       initialData: [
-        ["Profil MIS IT Al Uswah", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://picsum.photos/seed/video1/400/300"]
+        ["Profil AluswahGO", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://picsum.photos/seed/video1/400/300"]
       ]
     },
     {
@@ -456,7 +504,7 @@ function initializeSheets() {
       initialData: [
         ["teks_cta", "Mari bergabung bersama kami mencetak generasi Qur'ani, Mandiri, dan Berprestasi!"],
         ["no_wa", "6282333427597"],
-        ["pesan_wa", "Halo Admin MIS IT Al Uswah, saya ingin bertanya informasi pendaftaran siswa baru."],
+        ["pesan_wa", "Halo Admin AluswahGO, saya ingin bertanya informasi pendaftaran siswa baru."],
         ["facebook", "https://www.facebook.com/misitaluswah1"],
         ["instagram", "https://www.instagram.com/misitaluswah/"],
         ["youtube", "https://www.youtube.com/@misitaluswah"],
@@ -521,6 +569,7 @@ function getKeyValueData(ss, sheetName) {
     if (key) {
       result[key] = value;
     }
+    result[`_row${i+1}`] = value;
   }
   
   return result;
@@ -638,6 +687,50 @@ function handleSubmitSPMB(e) {
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
+function handleSubmitReview(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Review');
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: 'Sheet Review tidak ditemukan'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const timestamp = e.parameter.Timestamp || new Date().toLocaleString('id-ID');
+  const peran = e.parameter.Peran || '';
+  const namaWali = e.parameter['Nama Wali'] || '';
+  const statusWali = e.parameter['Status Wali'] || '';
+  const namaSiswa = e.parameter['Nama Siswa'] || '';
+  const kelas = e.parameter.Kelas || '';
+  const tahunLulus = e.parameter['Tahun Lulus'] || '';
+  const rating = e.parameter.Rating || '';
+  const testimoni = e.parameter.Testimoni || '';
+  const foto = e.parameter.Foto || '';
+  const statusTampil = 'Pending'; // Default status
+
+  const rowData = [
+    timestamp,
+    peran,
+    namaWali,
+    statusWali,
+    namaSiswa,
+    kelas,
+    tahunLulus,
+    rating,
+    testimoni,
+    foto,
+    statusTampil
+  ];
+
+  sheet.appendRow(rowData);
+
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    message: 'Review berhasil dikirim'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
 function initializeSPMBSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName('Pendaftar_SPMB');
@@ -659,4 +752,307 @@ function initializeSPMBSheet() {
 // Fungsi bantuan untuk membuat ID Sesi acak
 function generateSessionId() {
   return 'sess_' + Math.random().toString(36).substr(2, 9);
+}
+
+// ================= YAUMIYAH BACKEND =================
+
+const CONFIG_YAUMIYAH = {
+  SHEET_NAME_GURU: 'DATA_GURU',
+  SHEET_NAME_LAPORAN: 'Laporan',
+  FOLDER_ID: '18qyef8u4GPzviKrVjI8SvEqOHpnL3Cl3', // ID Folder Induk MODUL_AJAR
+  ADMIN_PASSWORD: 'bismillah'
+};
+
+function normalize(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .toLowerCase()
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function checkAdminPassword(input) {
+  return input === CONFIG_YAUMIYAH.ADMIN_PASSWORD;
+}
+
+function getOrCreateTeacherFolder(rootId, teacherName) {
+  const root = DriveApp.getFolderById(rootId);
+  const safeName = String(teacherName).trim().replace(/[\/\\]/g, "_");
+  
+  const folders = root.getFoldersByName(safeName);
+  if (folders.hasNext()) {
+    return folders.next();
+  } else {
+    return root.createFolder(safeName);
+  }
+}
+
+function uploadFile(data, fileName, teacherName, bulan, pekan) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000); 
+
+    const targetFolder = getOrCreateTeacherFolder(CONFIG_YAUMIYAH.FOLDER_ID, teacherName);
+    
+    const contentType = data.substring(5, data.indexOf(';'));
+    const bytes = Utilities.base64Decode(data.substring(data.indexOf('base64,') + 7));
+    
+    const uniqueFileName = `${bulan}_Pekan${pekan}_${fileName}`;
+    const blob = Utilities.newBlob(bytes, contentType, uniqueFileName);
+    
+    const file = targetFolder.createFile(blob);
+    
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e) {}
+    
+    return { success: true, url: file.getUrl() };
+
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getDataGuru() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(CONFIG_YAUMIYAH.SHEET_NAME_GURU);
+    if (!sheet) return [];
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return [];
+
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 3) return []; 
+
+    const data = sheet.getRange(2, 1, lastRow - 1, 4).getValues(); 
+    return data
+      .map((r, i) => {
+        const status = String(r[1] || "");
+        const nama = String(r[2] || "").trim();
+        const phone = String(r[3] || "").trim(); 
+        if (!nama) return null;
+        return {
+          id: i + 1,
+          nama,
+          gender: status.toLowerCase().includes("ustadzah") ? "P" : "L",
+          phone: phone 
+        };
+      })
+      .filter(Boolean);
+  } catch (e) {
+    return [];
+  }
+}
+
+function getAllLaporan() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(CONFIG_YAUMIYAH.SHEET_NAME_LAPORAN);
+    if (!sheet) return [];
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return [];
+
+    const lastCol = sheet.getLastColumn();
+    const numCols = lastCol > 0 ? lastCol : 1;
+
+    const data = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
+
+    const sanitizedData = data.map(row => {
+      const safeRow = row.map(cell => {
+        if (cell instanceof Date) return cell.toISOString();
+        return cell;
+      });
+
+      return {
+        raw: safeRow,
+        nama: String(row[1] || ""),
+        bulan: String(row[2] || ""),
+        pekan: String(row[3] || ""),
+        timestamp: row[30] ? String(row[30]) : ""
+      };
+    });
+
+    return sanitizedData;
+
+  } catch (e) {
+    return [];
+  }
+}
+
+function getFilledWeeks(nama, bulan) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(CONFIG_YAUMIYAH.SHEET_NAME_LAPORAN);
+    if (!sheet) return [];
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return [];
+
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 4) return []; 
+    
+    const data = sheet.getRange(2, 2, lastRow - 1, 3).getValues();
+    if (!data || !Array.isArray(data)) return [];
+    
+    const targetName = normalize(nama);
+    const targetBulan = normalize(bulan);
+
+    const filled = data
+      .filter(row => normalize(row[0]) === targetName && normalize(row[1]) === targetBulan)
+      .map(row => String(row[2]));
+      
+    return [...new Set(filled)];
+  } catch (e) {
+    return [];
+  }
+}
+
+function checkLaporan(nama, bulan, pekan) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(CONFIG_YAUMIYAH.SHEET_NAME_LAPORAN);
+    if (!sheet) return null;
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return null;
+    
+    const lastCol = sheet.getLastColumn();
+    const numCols = lastCol > 0 ? lastCol : 1;
+
+    const data = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
+    if (!data) return null;
+
+    const targetName = normalize(nama);
+    const targetBulan = normalize(bulan);
+    const targetPekan = normalize(pekan);
+
+    const match = data.find(row => 
+      normalize(row[1]) === targetName && 
+      normalize(row[2]) === targetBulan && 
+      normalize(row[3]) === targetPekan
+    );
+
+    if (!match) return null;
+
+    const safeNum = (val) => Number(val) || 0;
+    const safeBool = (val) => (val == 1 || val === "Ya");
+    const getVal = (idx) => match[idx] !== undefined ? match[idx] : 0;
+    const getRaw = (idx) => match[idx] !== undefined ? match[idx] : "";
+
+    return {
+      found: true,
+      targetJamaah: safeNum(getVal(4)), sholatJamaah: safeNum(getVal(5)),
+      targetMalam: safeNum(getVal(6)), sholatMalam: safeNum(getVal(7)),
+      targetDhuha: safeNum(getVal(8)), sholatDhuha: safeNum(getVal(9)),
+      targetTilawah: safeNum(getVal(10)), tilawah: safeNum(getVal(11)),
+      targetPuasaSenin: safeNum(getVal(12)), puasaSenin: safeBool(getVal(13)),
+      targetPuasaKamis: safeNum(getVal(14)), puasaKamis: safeBool(getVal(15)),
+      
+      targetPerangkat: safeNum(getVal(16)), 
+      perangkat: getRaw(17), 
+
+      targetDzikir: safeNum(getVal(18)), dzikir: safeNum(getVal(19)),
+      targetMendoakan: safeNum(getVal(20)), mendoakan: safeNum(getVal(21)),
+      targetInfaq: safeNum(getVal(22)), infaq: safeNum(getVal(23)),
+      targetBacaBuku: safeNum(getVal(24)), bacaBuku: safeNum(getVal(25)),
+      targetOlahraga: safeNum(getVal(26)), olahraga: safeNum(getVal(27)),
+      targetMenyapa: safeNum(getVal(28)), menyapaSiswa: safeNum(getVal(29))
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function simpanLaporan(data) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000); 
+  } catch (e) {
+    return { success: false, message: "Server sibuk, coba lagi nanti." };
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(CONFIG_YAUMIYAH.SHEET_NAME_LAPORAN);
+    
+    if (!sheet) {
+      sheet = ss.insertSheet(CONFIG_YAUMIYAH.SHEET_NAME_LAPORAN);
+      sheet.appendRow([
+        "No.", "Nama Guru", "Bulan", "Pekan", 
+        "Target Jamaah", "4. Sholat Jamaah", "Target Malam", "5. Sholat Malam",
+        "Target Dhuha", "6. Sholat Dhuha", "Target Tilawah", "7. Tilawah", 
+        "Target Senin", "8. Puasa Senin", "Target Kamis", "9. Puasa Kamis", 
+        "Target Perangkat", "10. Perangkat", "Target Dzikir", "11. Dzikir", 
+        "Target Mendoakan", "12. Mendoakan", "Target Infaq", "13. Infaq", 
+        "Target Baca Buku", "14. Baca Buku", "Target Olahraga", "15. Olahraga", 
+        "Target Menyapa", "16. Menyapa", "Timestamp"
+      ]);
+      sheet.setFrozenRows(1);
+    }
+
+    const lastRow = sheet.getLastRow();
+    let rowIndexToUpdate = -1;
+    let nomorUrut = lastRow;
+
+    if (lastRow >= 2) {
+      const lastCol = sheet.getLastColumn();
+      const numColsCheck = lastCol >= 4 ? 3 : (lastCol >= 2 ? lastCol - 1 : 0);
+      
+      if (numColsCheck >= 3) {
+          const keyData = sheet.getRange(2, 2, lastRow - 1, 3).getValues();
+          const targetName = normalize(data.nama);
+          const targetBulan = normalize(data.bulan);
+          const targetPekan = normalize(data.pekan);
+
+          if (keyData && Array.isArray(keyData)) {
+            for (let i = 0; i < keyData.length; i++) {
+              if (normalize(keyData[i][0]) === targetName && 
+                  normalize(keyData[i][1]) === targetBulan && 
+                  normalize(keyData[i][2]) === targetPekan) {
+                rowIndexToUpdate = i + 2; 
+                nomorUrut = i + 1; 
+                break;
+              }
+            }
+          }
+      }
+    }
+
+    const timestamp = new Date();
+    const rowData = [
+      nomorUrut, data.nama, data.bulan, data.pekan,
+      data.targetJamaah, data.sholatJamaah,
+      data.targetMalam, data.sholatMalam,
+      data.targetDhuha, data.sholatDhuha,
+      data.targetTilawah, data.tilawah,
+      data.targetPuasaSenin, data.puasaSenin ? 1 : 0,
+      data.targetPuasaKamis, data.puasaKamis ? 1 : 0,
+      data.targetPerangkat, data.perangkat, 
+      data.targetDzikir, data.dzikir,
+      data.targetMendoakan, data.mendoakan,
+      data.targetInfaq, data.infaq,
+      data.targetBacaBuku, data.bacaBuku,
+      data.targetOlahraga, data.olahraga,
+      data.targetMenyapa, data.menyapaSiswa,
+      timestamp
+    ];
+
+    if (rowIndexToUpdate > 0) {
+      sheet.getRange(rowIndexToUpdate, 1, 1, rowData.length).setValues([rowData]);
+      return { success: true, message: "Data berhasil diperbarui (Update)", type: "update" };
+    } else {
+      sheet.appendRow(rowData);
+      return { success: true, message: "Data berhasil disimpan (Baru)", type: "new" };
+    }
+
+  } catch (e) {
+    return { success: false, message: "Error: " + e.toString() };
+  } finally {
+    lock.releaseLock();
+  }
 }

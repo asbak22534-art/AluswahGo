@@ -32,7 +32,7 @@ const gridComponents = {
   )
 };
 
-export function QuranView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
+export function QuranView({ t, onBack, title }: { t: ThemeConfig, onBack: () => void, title?: string }) {
   const [surahs, setSurahs] = useState<Chapter[]>([]);
   const [search, setSearch] = useState('');
   const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
@@ -122,7 +122,7 @@ export function QuranView({ t, onBack }: { t: ThemeConfig, onBack: () => void })
         <button onClick={selectedSurah ? () => setSelectedSurah(null) : onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h2 className="font-bold text-lg">{selectedSurah ? `Surat ke-${selectedSurah}` : "Al-Qur'an Digital"}</h2>
+        <h2 className="font-bold text-lg">{selectedSurah ? `Surat ke-${selectedSurah}` : (title || "Al-Qur'an Digital")}</h2>
       </header>
 
       <GlobalRunningText t={t} />

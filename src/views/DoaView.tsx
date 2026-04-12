@@ -22,7 +22,7 @@ export type DzikirSheetItem = {
 
 const CATEGORIES = ['Semua', 'Sholat', 'Aktivitas'];
 
-export function DoaView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
+export function DoaView({ t, onBack, title }: { t: ThemeConfig, onBack: () => void, title?: string }) {
   const { data, isLoading } = useData();
   const [activeTab, setActiveTab] = useState<'doa' | 'dzikir'>('doa');
   const [activeDzikirType, setActiveDzikirType] = useState<'pagi-sugro' | 'pagi-kubro' | 'petang-sugro' | 'petang-kubro'>('pagi-sugro');
@@ -60,7 +60,7 @@ export function DoaView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
         <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h2 className="font-bold text-lg flex-1 text-center pr-10">Layanan Doa & Dzikir</h2>
+        <h2 className="font-bold text-lg flex-1 text-center pr-10">{title || "Layanan Doa & Dzikir"}</h2>
       </header>
 
       {/* Main Tabs */}

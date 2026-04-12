@@ -3,7 +3,8 @@ import {
   Bell, Home, Compass, Grid, User, GraduationCap, FileText, 
   Wallet, CalendarCheck, MessageSquare, BookOpen, X, Palette,
   CheckCheck, BellOff, Book, Heart, Calendar, Users, Star, Award, Building, PieChart,
-  Play, Facebook, Instagram, Youtube, MapPin, MessageCircle, Share2
+  Play, Facebook, Instagram, Youtube, MapPin, MessageCircle, Share2,
+  ClipboardCheck, Handshake, ChevronUp, AlertCircle, Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Notification } from './types';
@@ -12,25 +13,36 @@ import { DateTimeAndTA } from './components/DateTimeAndTA';
 import { ActivitySlideshow } from './components/ActivitySlideshow';
 import { NotificationModal, NotifItem } from './components/NotificationComponents';
 import { SidebarItem, ActionItem, NewsCard, BottomNavItem, RunningText } from './components/UIComponents';
+import { LazyImage } from './components/LazyImage';
 import { GlobalRunningText } from './components/GlobalRunningText';
-import { Chatbot } from './components/Chatbot';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTheme } from './context/ThemeContext';
 import { useData } from './context/DataContext';
+import { AbsensiView } from './views/AbsensiView';
+import { AffiliasiView } from './views/AffiliasiView';
+import { YaumiyahView } from './views/YaumiyahView';
 import { NewsDetailView } from './views/NewsDetailView';
+import { NotificationCenterView } from './views/NotificationCenterView';
 import { VideoModal } from './components/VideoModal';
+import { ReviewSection } from './components/ReviewSection';
+import { ChatbotView } from './views/ChatbotView';
 
 // Lazy load views
 const QuranView = React.lazy(() => import('./views/QuranView').then(m => ({ default: m.QuranView })));
 const DoaView = React.lazy(() => import('./views/DoaView').then(m => ({ default: m.DoaView })));
 const KalenderView = React.lazy(() => import('./views/KalenderView').then(m => ({ default: m.KalenderView })));
 const SPMBView = React.lazy(() => import('./views/SPMBView').then(m => ({ default: m.SPMBView })));
+const SPMBModal = React.lazy(() => import('./components/SPMBModal').then(m => ({ default: m.SPMBModal })));
 const KritikView = React.lazy(() => import('./views/KritikView').then(m => ({ default: m.KritikView })));
 const ProgramView = React.lazy(() => import('./views/ProgramView').then(m => ({ default: m.ProgramView })));
 const EkstraView = React.lazy(() => import('./views/EkstraView').then(m => ({ default: m.EkstraView })));
 const SarprasView = React.lazy(() => import('./views/SarprasView').then(m => ({ default: m.SarprasView })));
 const NewsListView = React.lazy(() => import('./views/NewsListView').then(m => ({ default: m.NewsListView })));
 const ProfilView = React.lazy(() => import('./views/ProfilView').then(m => ({ default: m.ProfilView })));
+const RadialView = React.lazy(() => import('./components/RadialView'));
+const ReviewView = React.lazy(() => import('./views/ReviewView').then(m => ({ default: m.ReviewView })));
+const ReviewListView = React.lazy(() => import('./views/ReviewListView').then(m => ({ default: m.ReviewListView })));
+const GaleriView = React.lazy(() => import('./views/GaleriView').then(m => ({ default: m.GaleriView })));
 
 const renderHighlightedText = (text: string, highlight: string, color: string) => {
   if (!highlight) return text;
@@ -83,15 +95,68 @@ function useAutoScroll(intervalMs = 3000) {
   return { scrollRef, setIsPaused };
 }
 
+const formatImageUrl = (url: string | undefined) => {
+  if (!url) return '';
+  if (url.includes('drive.google.com/file/d/')) {
+    const match = url.match(/\/d\/(.*?)\//);
+    if (match && match[1]) {
+      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+  }
+  return url;
+};
+
 export default function App() {
   const { theme: t, themeName, setThemeName } = useTheme();
-  const { data, isLoading } = useData();
+  const { data, isLoading, error, refreshData } = useData();
   const [showNotifs, setShowNotifs] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
-  const [currentView, setCurrentView] = useState<'home' | 'quran' | 'doa' | 'kalender' | 'spmb' | 'kritik' | 'program' | 'ekstra' | 'sarpras' | 'news' | 'profil'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'quran' | 'doa' | 'kalender' | 'spmb' | 'spmb-form' | 'kritik' | 'program' | 'ekstra' | 'sarpras' | 'news' | 'profil' | 'absensi' | 'affiliasi' | 'yaumiyah' | 'radial' | 'review' | 'review-list' | 'galeri' | 'chatbot' | 'notification-center'>(() => {
+    return (localStorage.getItem('currentView') as any) || 'home';
+  });
+  const [showExitModal, setShowExitModal] = useState(false);
+  const isExiting = React.useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem('currentView', currentView);
+  }, [currentView]);
+
+  useEffect(() => {
+    if (!window.history.state || !window.history.state.appState) {
+      window.history.replaceState({ view: 'exit', appState: true }, '', '');
+      window.history.pushState({ view: currentView, appState: true }, '', `#${currentView}`);
+    }
+  }, []);
+
+  const handleNavigate = (view: typeof currentView) => {
+    if (view !== currentView) {
+      window.history.pushState({ view, appState: true }, '', view === 'home' ? '/' : `#${view}`);
+      setCurrentView(view);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentView === 'spmb-form') {
+      handleNavigate('spmb');
+    } else if (currentView !== 'home') {
+      handleNavigate('home');
+    } else {
+      window.history.back();
+    }
+  };
+
+  const confirmExit = () => {
+    isExiting.current = true;
+    setShowExitModal(false);
+    window.history.go(-2);
+  };
+
+  const cancelExit = () => {
+    setShowExitModal(false);
+  };
+  const [showAllServices, setShowAllServices] = useState(false);
 
   const { scrollRef: prestasiRef, setIsPaused: setPrestasiPaused } = useAutoScroll(3500);
-  const { scrollRef: reviewRef, setIsPaused: setReviewPaused } = useAutoScroll(4000);
   const { scrollRef: optionalRef, setIsPaused: setOptionalPaused } = useAutoScroll(4200);
   const { scrollRef: videoRef, setIsPaused: setVideoPaused } = useAutoScroll(4500);
 
@@ -111,6 +176,52 @@ export default function App() {
 
   // State for Video
   const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
+
+  // State for Layanan Digital Order
+  const [layananDigitalOrder, setLayananDigitalOrder] = useState<string[]>(() => {
+    const cached = localStorage.getItem('layananDigitalOrder');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [isLoadingLayananDigital, setIsLoadingLayananDigital] = useState(!localStorage.getItem('layananDigitalOrder'));
+  const [retryTrigger, setRetryTrigger] = useState(0);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (isExiting.current) return;
+      
+      // If any modal is open, close it and stay on the current view
+      if (selectedNews || selectedPrestasi || selectedVideo || selectedNotif) {
+        setSelectedNews(null);
+        setSelectedPrestasi(null);
+        setSelectedVideo(null);
+        setSelectedNotif(null);
+        // Push the state back so we don't lose the history
+        window.history.pushState({ view: currentView, appState: true }, '', currentView === 'home' ? '/' : `#${currentView}`);
+        return;
+      }
+
+      if (event.state && event.state.view === 'exit') {
+        if (currentView === 'spmb-form') {
+          window.history.replaceState({ view: 'exit', appState: true }, '', '');
+          window.history.pushState({ view: 'spmb', appState: true }, '', '#spmb');
+          setCurrentView('spmb');
+        } else if (currentView !== 'home') {
+          window.history.replaceState({ view: 'exit', appState: true }, '', '');
+          window.history.pushState({ view: 'home', appState: true }, '', '#home');
+          setCurrentView('home');
+        } else {
+          setShowExitModal(true);
+          window.history.pushState({ view: currentView, appState: true }, '', `#${currentView}`);
+        }
+      } else if (event.state && event.state.view) {
+        setCurrentView(event.state.view);
+      } else {
+        setCurrentView('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentView, selectedNews, selectedPrestasi, selectedVideo, selectedNotif]);
 
   useEffect(() => {
     const fetchNews = () => {
@@ -157,7 +268,7 @@ export default function App() {
 
       const script = document.createElement('script');
       script.id = callbackName;
-      script.src = `https://www.misitaluswah.sch.id/feeds/posts/default?alt=json-in-script&callback=${callbackName}`;
+      script.src = `https://www.misitaluswah.sch.id/feeds/posts/default/-/Artikel?alt=json-in-script&callback=${callbackName}`;
       script.onerror = () => {
         console.error("Gagal mengambil berita: JSONP request failed");
         setIsLoadingNews(false);
@@ -305,35 +416,266 @@ export default function App() {
           setIsLoadingOptional(false);
         }
       } catch (error) {
-        console.error("Failed to fetch optional config", error);
+        // Silently fail if optional config is not available
         setIsLoadingOptional(false);
+      }
+    };
+    
+    const fetchLayananDigital = async () => {
+      try {
+        const SHEET_ID = '1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s';
+        const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Layanan%20Digital`);
+        if (!res.ok) return;
+        const csv = await res.text();
+        
+        const rows = [];
+        let currentRow = [];
+        let currentCell = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < csv.length; i++) {
+          const char = csv[i];
+          if (char === '"' && csv[i+1] === '"') {
+            currentCell += '"';
+            i++;
+          } else if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            currentRow.push(currentCell);
+            currentCell = '';
+          } else if (char === '\n' && !inQuotes) {
+            currentRow.push(currentCell);
+            rows.push(currentRow);
+            currentRow = [];
+            currentCell = '';
+          } else if (char === '\r' && !inQuotes) {
+            // ignore
+          } else {
+            currentCell += char;
+          }
+        }
+        if (currentRow.length > 0 || currentCell !== '') {
+          currentRow.push(currentCell);
+          rows.push(currentRow);
+        }
+
+        const orderedServices: {name: string, order: number}[] = [];
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          const orderStr = row[0]?.replace(/^["']|["']$/g, '').trim();
+          const name = row[1]?.replace(/^["']|["']$/g, '').trim();
+          
+          if (orderStr && name && !isNaN(parseInt(orderStr))) {
+            orderedServices.push({ name, order: parseInt(orderStr) });
+          }
+        }
+        
+        orderedServices.sort((a, b) => a.order - b.order);
+        const newOrder = orderedServices.map(s => s.name);
+        setLayananDigitalOrder(newOrder);
+        localStorage.setItem('layananDigitalOrder', JSON.stringify(newOrder));
+      } catch (error) {
+        console.error("Error fetching Layanan Digital:", error);
+      } finally {
+        setIsLoadingLayananDigital(false);
       }
     };
     
     fetchNews();
     fetchPrestasi();
     fetchOptionalConfig();
-  }, []);
+    fetchLayananDigital();
+  }, [retryTrigger]);
+
+  useEffect(() => {
+    if (data?.header) {
+      // Update document title
+      const appName = data.header.nama_aplikasi || data.header['Nama Aplikasi'] || data.header.nama || data.header._row5 || data.header.judul || 'AluswahGO';
+      document.title = appName;
+
+      const logoUrl = formatImageUrl(data.header.logo) || 'https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB';
+
+      // Update Favicon and Apple Touch Icon
+      let iconLink = document.querySelector('link[rel="icon"]');
+      if (!iconLink) {
+        iconLink = document.createElement('link');
+        iconLink.setAttribute('rel', 'icon');
+        iconLink.setAttribute('type', 'image/png');
+        document.head.appendChild(iconLink);
+      }
+      iconLink.setAttribute('href', logoUrl);
+
+      let appleIconLink = document.querySelector('link[rel="apple-touch-icon"]');
+      if (!appleIconLink) {
+        appleIconLink = document.createElement('link');
+        appleIconLink.setAttribute('rel', 'apple-touch-icon');
+        document.head.appendChild(appleIconLink);
+      }
+      appleIconLink.setAttribute('href', logoUrl);
+
+      // Update PWA manifest dynamically
+      let manifestLink = document.querySelector('link[rel="manifest"]');
+      if (!manifestLink) {
+        manifestLink = document.createElement('link');
+        manifestLink.setAttribute('rel', 'manifest');
+        document.head.appendChild(manifestLink);
+      }
+      
+      const manifest = {
+        name: appName,
+        short_name: appName,
+        description: `Portal Sekolah ${appName}`,
+        theme_color: '#0d9488',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+          {
+            src: logoUrl,
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: logoUrl,
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: logoUrl,
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      const manifestURL = URL.createObjectURL(blob);
+      manifestLink.setAttribute('href', manifestURL);
+    }
+  }, [data?.header]);
 
   // Data Notifikasi
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    if (data?.notifikasi) {
-      // Format notifikasi dari Google Sheets
-      const formattedNotifs = data.notifikasi.map((n: any, idx: number) => ({
-        id: n.id || `notif-${idx}`,
-        type: (n.type as 'info' | 'success' | 'warning' | 'error') || 'info',
-        title: n.title || 'Notifikasi',
-        desc: n.desc || '',
-        fullDesc: n.fullDesc || n.desc || '',
-        time: n.time || 'Baru saja',
-        unread: true, // Default unread untuk notifikasi baru
-        image: n.image || undefined
-      }));
-      setNotifications(formattedNotifs);
+    const combinedNotifs: Notification[] = [];
+
+    // Add News
+    if (newsList && newsList.length > 0) {
+      newsList.forEach((news, idx) => {
+        let pubDate = Date.now();
+        try { pubDate = new Date(news.pubDate.replace(' ', 'T')).getTime(); } catch(e) {}
+        
+        combinedNotifs.push({
+          id: `news-${news.link}`,
+          type: 'news',
+          title: 'Berita Baru',
+          desc: news.title,
+          fullDesc: news.title,
+          time: new Date(pubDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          unread: true,
+          image: news.thumbnail,
+          linkType: 'news',
+          linkData: news,
+          timestamp: pubDate
+        });
+      });
     }
-  }, [data?.notifikasi]);
+
+    // Add Prestasi
+    if (prestasiList && prestasiList.length > 0) {
+      prestasiList.forEach((prestasi, idx) => {
+        let pubDate = Date.now();
+        try { pubDate = new Date(prestasi.pubDate.replace(' ', 'T')).getTime(); } catch(e) {}
+
+        combinedNotifs.push({
+          id: `prestasi-${prestasi.link}`,
+          type: 'prestasi',
+          title: 'Prestasi Baru',
+          desc: prestasi.title,
+          fullDesc: prestasi.title,
+          time: new Date(pubDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          unread: true,
+          image: prestasi.thumbnail,
+          linkType: 'prestasi',
+          linkData: prestasi,
+          timestamp: pubDate
+        });
+      });
+    }
+
+    // Add Video
+    if (data?.video && data.video.length > 0) {
+      data.video.forEach((video: any, idx: number) => {
+        const url = video.url_youtube;
+        if (!url) return;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        if (match && match[2].length === 11) {
+          const videoId = match[2];
+          
+          let videoTime = Date.now() - (idx * 1000);
+          if (video.timestamp) {
+            try {
+              const parsedTime = new Date(video.timestamp).getTime();
+              if (!isNaN(parsedTime)) {
+                videoTime = parsedTime;
+              }
+            } catch (e) {}
+          }
+          
+          combinedNotifs.push({
+            id: `video-${videoId}`,
+            type: 'video',
+            title: 'Video Baru',
+            desc: video.judul || 'Video terbaru telah diunggah',
+            fullDesc: video.judul || 'Video terbaru telah diunggah',
+            time: video.timestamp ? new Date(videoTime).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Baru saja',
+            unread: true,
+            image: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+            linkType: 'video',
+            linkData: video,
+            timestamp: videoTime
+          });
+        }
+      });
+    }
+
+    // Add Karya Siswa
+    if (data?.karyaSiswa && data.karyaSiswa.length > 0) {
+      data.karyaSiswa.forEach((karya: any, idx: number) => {
+        let pubDate = Date.now();
+        try { pubDate = new Date(karya.pubDate?.replace(' ', 'T') || karya.timestamp).getTime(); } catch(e) {}
+
+        combinedNotifs.push({
+          id: `karya-${karya.link || idx}`,
+          type: 'karya',
+          title: 'Karya Siswa Baru',
+          desc: karya.title || karya.judul,
+          fullDesc: karya.title || karya.judul,
+          time: new Date(pubDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          unread: true,
+          image: karya.thumbnail || karya.urlGambar,
+          linkType: 'karya',
+          linkData: karya,
+          timestamp: pubDate
+        });
+      });
+    }
+
+    // Sort by timestamp descending
+    combinedNotifs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    // Load read status from localStorage
+    const readNotifsStr = localStorage.getItem('readNotifs');
+    const readNotifs: string[] = readNotifsStr ? JSON.parse(readNotifsStr) : [];
+
+    const finalNotifs = combinedNotifs.slice(0, 50).map(n => ({
+      ...n,
+      unread: !readNotifs.includes(n.id)
+    }));
+
+    setNotifications(finalNotifs);
+  }, [newsList, prestasiList, data?.video, data?.karyaSiswa]);
 
   const unreadCount = notifications.filter(n => n.unread).length;
 
@@ -346,14 +688,44 @@ export default function App() {
   };
 
   const handleNotifClick = (notif: Notification) => {
-    setSelectedNotif(notif);
-    setShowNotifs(false); // Tutup dropdown
     // Tandai sebagai dibaca
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, unread: false } : n));
+    
+    const readNotifsStr = localStorage.getItem('readNotifs');
+    let readNotifs: string[] = readNotifsStr ? JSON.parse(readNotifsStr) : [];
+    if (!readNotifs.includes(notif.id)) {
+      readNotifs.push(notif.id);
+      // Keep only the last 50 read notifications to prevent localStorage bloat
+      if (readNotifs.length > 50) {
+        readNotifs = readNotifs.slice(readNotifs.length - 50);
+      }
+      localStorage.setItem('readNotifs', JSON.stringify(readNotifs));
+    }
+
+    setShowNotifs(false); // Tutup dropdown
+
+    // Handle navigation based on linkType
+    if (notif.linkType === 'news') {
+      setSelectedNews(notif.linkData);
+    } else if (notif.linkType === 'prestasi') {
+      setSelectedPrestasi(notif.linkData);
+    } else if (notif.linkType === 'karya') {
+      setSelectedNews(notif.linkData);
+    } else if (notif.linkType === 'video') {
+      setSelectedVideo(notif.linkData);
+    } else {
+      setSelectedNotif(notif);
+    }
   };
 
   const markAllAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    let allIds = notifications.map(n => n.id);
+    // Keep only the last 50 read notifications
+    if (allIds.length > 50) {
+      allIds = allIds.slice(allIds.length - 50);
+    }
+    localStorage.setItem('readNotifs', JSON.stringify(allIds));
   };
 
   useEffect(() => {
@@ -380,10 +752,38 @@ export default function App() {
     }
   };
 
+  const allServices = [
+    { id: 'quran', label: "Al Qur'an", icon: <Book size={20} /> },
+    { id: 'doa', label: "Doa", icon: <Heart size={20} /> },
+    { id: 'yaumiyah', label: "Yaumiyah", icon: <CheckCheck size={20} /> },
+    { id: 'kalender', label: "Kalender", icon: <Calendar size={20} /> },
+    { id: 'spmb', label: "SPMB", icon: <Users size={20} /> },
+    { id: 'kritik', label: "Kritik", sheetLabel: "Kritik & Saran", icon: <MessageSquare size={20} /> },
+    { id: 'program', label: "Program", icon: <Star size={20} /> },
+    { id: 'ekstra', label: "Ekstra", icon: <Award size={20} /> },
+    { id: 'sarpras', label: "Sarpras", icon: <Building size={20} /> },
+    { id: 'absensi', label: "Absensi", icon: <ClipboardCheck size={20} /> },
+    { id: 'affiliasi', label: "Affiliasi", icon: <Handshake size={20} /> },
+    { id: 'review', label: "Review", icon: <Star size={20} /> },
+    { id: 'galeri', label: "Galeri", icon: <ImageIcon size={20} /> },
+  ];
+
+  const orderedServices = layananDigitalOrder.length > 0 
+    ? layananDigitalOrder.map(name => {
+        const service = allServices.find(s => s.label === name || s.sheetLabel === name);
+        if (service) {
+          return { ...service, label: name }; // Use the name from the spreadsheet
+        }
+        return null;
+      }).filter(Boolean) as typeof allServices
+    : allServices;
+
+  const getServiceTitle = (id: string) => orderedServices.find(s => s.id === id)?.label;
+
   return (
     <div className="bg-gray-200 min-h-screen w-full max-w-full flex justify-center overflow-x-hidden">
       {/* Main Container */}
-      <div className="w-full max-w-full lg:max-w-6xl bg-gray-50 h-[100dvh] relative lg:shadow-2xl overflow-hidden flex flex-col lg:flex-row font-sans transition-colors duration-300">
+      <div className="w-full max-w-full bg-gray-50 h-[100dvh] relative overflow-hidden flex flex-col lg:flex-row font-sans transition-colors duration-300">
         
         {/* Sidebar (Desktop Only) */}
         <aside className="hidden lg:flex w-64 bg-white border-r border-gray-100 flex-col z-40 shadow-sm shrink-0">
@@ -392,9 +792,10 @@ export default function App() {
               <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse shrink-0"></div>
             ) : (
               <img 
-                src={data?.header?.logo || "https://lh3.googleusercontent.com/a/ACg8ocLjDVk3HM6HfZrRk4kJAwJveT-6ZvIEr97Ky1y_vL0a2L6Nhd4=s400-c"} 
-                alt={`Logo ${data?.header?.judul || "MIS IT Al Uswah"}`} 
+                src={formatImageUrl(data?.header?.logo) || "https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB"}
+                alt={`Logo ${data?.header?.judul || "AluswahGO"}`}
                 className="w-10 h-10 rounded-xl object-cover shadow-sm shrink-0"
+                loading="lazy"
                 referrerPolicy="no-referrer"
               />
             )}
@@ -406,27 +807,19 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "Al Uswah"}</h1>
+                  <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "AluswahGO"}</h1>
                   <p className={`text-xs ${t.primaryText} font-medium transition-colors line-clamp-2`}>{data?.header?.sub_judul || "Portal Sekolah"}</p>
                 </>
               )}
             </div>
           </div>
           <nav className="flex-1 px-4 py-6 flex flex-col gap-2">
-            <SidebarItem icon={<Home size={20} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => setCurrentView('home')} />
-            <SidebarItem icon={<PieChart size={20} />} label="Radial" t={t} onClick={() => window.open(data?.profil?.link_radial || 'https://ai.studio/apps/0eda68f0-023c-4889-a38a-2a21d26e60af', '_blank')} />
-            <SidebarItem icon={<FileText size={20} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => setCurrentView('spmb')} />
-            <SidebarItem icon={<User size={20} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => setCurrentView('profil')} />
+            <SidebarItem icon={<Home size={20} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
+            <SidebarItem icon={<PieChart size={20} />} label="Radial" active={currentView === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
+            <SidebarItem icon={<FileText size={20} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
+            <SidebarItem icon={<User size={20} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
+            <SidebarItem icon={<MessageCircle size={20} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
           </nav>
-          <div className="p-4 border-t border-gray-50">
-            <button 
-              onClick={toggleTheme}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors font-medium text-sm active:scale-95`}
-            >
-              <Palette size={18} />
-              Ubah Tema
-            </button>
-          </div>
         </aside>
 
         {/* Content Area */}
@@ -451,9 +844,10 @@ export default function App() {
                 <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse shadow-sm shrink-0"></div>
               ) : (
                 <img 
-                  src={data?.header?.logo || "https://lh3.googleusercontent.com/a/ACg8ocLjDVk3HM6HfZrRk4kJAwJveT-6ZvIEr97Ky1y_vL0a2L6Nhd4=s400-c"} 
-                  alt={`Logo ${data?.header?.judul || "MIS IT Al Uswah"}`} 
+                  src={formatImageUrl(data?.header?.logo) || "https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB"}
+                  alt={`Logo ${data?.header?.judul || "AluswahGO"}`}
                   className="w-10 h-10 rounded-full object-cover shadow-sm shrink-0"
+                  loading="lazy"
                   referrerPolicy="no-referrer"
                 />
               )}
@@ -465,7 +859,7 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "MIS IT Al Uswah"}</h1>
+                    <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "AluswahGO"}</h1>
                     <p className={`text-xs ${t.primaryText} font-medium transition-colors line-clamp-2`}>{data?.header?.sub_judul || "Sekolah Dasar Islam"}</p>
                   </>
                 )}
@@ -483,7 +877,8 @@ export default function App() {
               {/* Theme Toggle */}
               <button 
                 onClick={toggleTheme}
-                className="lg:hidden relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
+                className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
+                title="Ubah Tema"
               >
                 <Palette size={22} />
               </button>
@@ -496,7 +891,9 @@ export default function App() {
                 >
                   <Bell size={22} />
                   {unreadCount > 0 && (
-                    <span className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 ${t.secondaryBg} rounded-full border-2 border-white transition-colors`}></span>
+                    <span className={`absolute top-0 right-0 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white ${t.secondaryBg} rounded-full border-2 border-white px-1 transition-colors`}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
                   )}
                 </button>
 
@@ -519,11 +916,14 @@ export default function App() {
                         </div>
                         <div className="max-h-[60vh] overflow-y-auto">
                           {notifications.length > 0 ? (
-                            notifications.map(notif => (
+                            notifications.slice(0, 10).map((notif, idx) => (
                               <NotifItem 
-                                key={notif.id}
+                                key={`${notif.id}-${idx}`}
                                 notif={notif}
-                                onClick={() => handleNotifClick(notif)}
+                                onClick={() => {
+                                  handleNotifClick(notif);
+                                  setShowNotifs(false);
+                                }}
                                 t={t}
                               />
                             ))
@@ -543,7 +943,13 @@ export default function App() {
                               <CheckCheck size={16} /> Tandai dibaca
                             </button>
                           ) : <div></div>}
-                          <button className={`text-sm font-medium ${t.primaryText} hover:underline transition-colors`}>
+                          <button 
+                            onClick={() => {
+                              setShowNotifs(false);
+                              handleNavigate('notification-center');
+                            }}
+                            className={`text-sm font-bold ${t.primaryText} hover:opacity-80 transition-opacity`}
+                          >
                             Lihat Semua
                           </button>
                         </div>
@@ -558,8 +964,24 @@ export default function App() {
           <GlobalRunningText t={t} />
 
           {/* Main Scrollable Content */}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0">
-            <div className="max-w-5xl mx-auto w-full min-w-0">
+          <main id="main-scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0">
+            {error && !data ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center h-full">
+                <AlertCircle size={48} className="text-red-500 mb-4" />
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Gagal Memuat Data</h2>
+                <p className="text-gray-600 mb-6 max-w-md">{error}</p>
+                <button 
+                  onClick={() => {
+                    refreshData();
+                    setRetryTrigger(prev => prev + 1);
+                  }}
+                  className={`px-6 py-2.5 rounded-xl text-white font-medium ${t.primaryBg} hover:opacity-90 transition-opacity`}
+                >
+                  Coba Lagi
+                </button>
+              </div>
+            ) : (
+            <div className="max-w-[1600px] mx-auto w-full min-w-0">
               
               {/* Hero / Welcome Card */}
               <div className="px-4 md:px-8 pt-4 md:pt-6 pb-2">
@@ -640,14 +1062,43 @@ export default function App() {
                   <h3 className="font-bold text-gray-800 text-base md:text-lg">Layanan Digital</h3>
                 </div>
                 <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-y-5 gap-x-2 sm:gap-x-3">
-                  <ActionItem icon={<Book size={20} />} label="Al Qur'an" t={t} index={0} onClick={() => setCurrentView('quran')} />
-                  <ActionItem icon={<Heart size={20} />} label="Doa" t={t} index={1} onClick={() => setCurrentView('doa')} />
-                  <ActionItem icon={<Calendar size={20} />} label="Kalender" t={t} index={2} onClick={() => setCurrentView('kalender')} />
-                  <ActionItem icon={<Users size={20} />} label="SPMB" t={t} index={3} onClick={() => setCurrentView('spmb')} />
-                  <ActionItem icon={<MessageSquare size={20} />} label="Kritik" t={t} index={4} onClick={() => setCurrentView('kritik')} />
-                  <ActionItem icon={<Star size={20} />} label="Program" t={t} index={5} onClick={() => setCurrentView('program')} />
-                  <ActionItem icon={<Award size={20} />} label="Ekstra" t={t} index={6} onClick={() => setCurrentView('ekstra')} />
-                  <ActionItem icon={<Building size={20} />} label="Sarpras" t={t} index={7} onClick={() => setCurrentView('sarpras')} />
+                  {isLoadingLayananDigital && layananDigitalOrder.length === 0 ? (
+                    Array.from({ length: 8 }).map((_, idx) => (
+                      <div key={`skeleton-service-${idx}`} className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gray-200 animate-pulse"></div>
+                        <div className="w-16 h-3 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      {orderedServices.map((service, index) => {
+                        // Show first 7 items + 'Lainnya' button on mobile, show all on desktop or if expanded
+                        const isHiddenOnMobile = index >= 7 && !showAllServices;
+                        
+                        return (
+                          <ActionItem 
+                            key={`${service.id}-${index}`}
+                            className={isHiddenOnMobile ? "hidden md:flex" : "flex"} 
+                            icon={service.icon} 
+                            label={service.label} 
+                            t={t} 
+                            index={index} 
+                            onClick={() => handleNavigate(service.id as any)} 
+                          />
+                        );
+                      })}
+                      
+                      {/* Toggle Button for Mobile */}
+                      <ActionItem 
+                        className="md:hidden" 
+                        icon={showAllServices ? <ChevronUp size={20} /> : <Grid size={20} />} 
+                        label={showAllServices ? "Lebih Sedikit" : "Lainnya"} 
+                        t={t} 
+                        index={12} 
+                        onClick={() => setShowAllServices(!showAllServices)} 
+                      />
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -671,7 +1122,7 @@ export default function App() {
                   {isLoadingPrestasi ? (
                     // Skeleton loading
                     Array.from({ length: 4 }).map((_, idx) => (
-                      <div key={idx} className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start animate-pulse">
+                      <div key={`prestasi-skeleton-${idx}`} className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start animate-pulse">
                         <div className="w-full h-36 md:h-44 rounded-xl bg-gray-200 shrink-0"></div>
                         <div className="flex-1 flex flex-col">
                           <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -682,16 +1133,16 @@ export default function App() {
                   ) : prestasiList.length > 0 ? (
                     prestasiList.map((prestasi, idx) => (
                       <div 
-                        key={idx} 
+                        key={prestasi.link || `prestasi-${idx}`} 
                         onClick={() => setSelectedPrestasi(prestasi)}
                         className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start cursor-pointer hover:shadow-lg transition-all group relative overflow-hidden"
                       >
                         <div className="relative w-full h-36 md:h-44 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                          <img 
+                          <LazyImage 
                             src={prestasi.thumbnail || `https://picsum.photos/seed/prestasi${idx}/400/300`} 
                             alt={prestasi.title} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            referrerPolicy="no-referrer"
+                            containerClassName="w-full h-full"
+                            className="group-hover:scale-105 transition-transform duration-500"
                           />
                           <div className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
                             <span>🏆</span> Prestasi
@@ -732,71 +1183,7 @@ export default function App() {
               </div>
 
               {/* Review Section */}
-              {(isLoading || (data?.review && data.review.length > 0)) && (
-                <div className="py-4 w-full">
-                  <div className="flex items-center justify-between mb-4 px-4 md:px-8">
-                    <h3 className="font-bold text-gray-800 text-lg md:text-xl">Kata Wali Murid</h3>
-                  </div>
-                  <div 
-                    ref={reviewRef}
-                    className="flex overflow-x-auto gap-4 pb-4 px-4 md:px-8 snap-x hide-scrollbar items-stretch"
-                    onMouseEnter={() => setReviewPaused(true)}
-                    onMouseLeave={() => setReviewPaused(false)}
-                    onTouchStart={() => setReviewPaused(true)}
-                    onTouchEnd={() => setReviewPaused(false)}
-                  >
-                    {isLoading ? (
-                      Array.from({ length: 4 }).map((_, idx) => (
-                        <div key={idx} className="w-[280px] md:w-[320px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col snap-start animate-pulse">
-                          <div className="flex gap-1 mb-3">
-                            {Array.from({length: 5}).map((_, i) => (
-                              <div key={i} className="w-4 h-4 bg-gray-200 rounded-full"></div>
-                            ))}
-                          </div>
-                          <div className="flex-1 space-y-2 mb-5">
-                            <div className="h-3 bg-gray-200 rounded w-full"></div>
-                            <div className="h-3 bg-gray-200 rounded w-full"></div>
-                            <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                          </div>
-                          <div className="flex items-center gap-3 mt-auto pt-4 border-t border-gray-50">
-                            <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0"></div>
-                            <div className="flex-1">
-                              <div className="h-4 bg-gray-200 rounded w-1/2 mb-1"></div>
-                              <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      data.review.map((item, idx) => {
-                        const rating = parseInt(item.rating) || 5;
-                        return (
-                          <div key={idx} className="w-[280px] md:w-[320px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col snap-start">
-                            <div className="flex gap-1 mb-3">
-                              {Array.from({length: 5}).map((_, i) => (
-                                <Star key={i} size={16} className={i < rating ? "text-amber-400 fill-amber-400" : "text-gray-200"} />
-                              ))}
-                            </div>
-                            <p className="text-sm text-gray-700 italic mb-5 line-clamp-4 flex-1">"{item.komentar}"</p>
-                            <div className="flex items-center gap-3 mt-auto pt-4 border-t border-gray-50">
-                              <img 
-                                src={item.foto || `https://picsum.photos/seed/user${idx}/100/100`} 
-                                alt={item.nama} 
-                                className="w-10 h-10 rounded-full object-cover bg-gray-100"
-                                referrerPolicy="no-referrer"
-                              />
-                              <div>
-                                <h5 className="font-bold text-gray-800 text-sm">{item.nama}</h5>
-                                <p className="text-[11px] text-gray-500">{item.peran}</p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
+              <ReviewSection data={data?.review || []} isLoading={isLoading} onViewAll={() => handleNavigate('review-list')} />
 
               {/* Optional Section */}
               {(isLoadingOptional || (optionalSection && optionalSection.status && optionalSection.data.length > 0)) && (
@@ -816,7 +1203,7 @@ export default function App() {
                   >
                     {isLoadingOptional ? (
                       Array.from({ length: 4 }).map((_, idx) => (
-                        <div key={idx} className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start animate-pulse">
+                        <div key={`optional-skeleton-${idx}`} className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start animate-pulse">
                           <div className="w-full h-36 md:h-44 rounded-xl bg-gray-200 shrink-0"></div>
                           <div className="flex-1 flex flex-col justify-between p-1">
                             <div className="space-y-2">
@@ -830,17 +1217,17 @@ export default function App() {
                     ) : (
                       optionalSection?.data.map((item, idx) => (
                         <div 
-                          key={idx} 
+                          key={item.link || `optional-${idx}`} 
                           onClick={() => setSelectedNews(item)}
                           className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start cursor-pointer hover:shadow-md transition-shadow group"
                         >
                           <div className="relative w-full h-36 md:h-44 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                             {item.thumbnail ? (
-                              <img 
+                              <LazyImage 
                                 src={item.thumbnail} 
                                 alt={item.title} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                referrerPolicy="no-referrer"
+                                containerClassName="w-full h-full"
+                                className="group-hover:scale-105 transition-transform duration-500"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-gray-50">
@@ -886,7 +1273,7 @@ export default function App() {
                   >
                     {isLoading ? (
                       Array.from({ length: 4 }).map((_, idx) => (
-                        <div key={idx} className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start animate-pulse">
+                        <div key={`video-skeleton-${idx}`} className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start animate-pulse">
                           <div className="w-full h-36 md:h-44 rounded-xl bg-gray-200 shrink-0"></div>
                           <div className="flex-1 flex flex-col">
                             <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
@@ -914,17 +1301,17 @@ export default function App() {
 
                         return (
                           <div 
-                            key={idx} 
+                            key={videoId || `video-${idx}`} 
                             onClick={() => setSelectedVideo(item)}
                             className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start cursor-pointer hover:shadow-md transition-shadow group"
                           >
                             <div className="relative w-full h-36 md:h-44 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                               {thumbnailUrl ? (
-                                <img 
+                                <LazyImage 
                                   src={thumbnailUrl} 
                                   alt={item.judul} 
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                  referrerPolicy="no-referrer"
+                                  containerClassName="w-full h-full"
+                                  className="group-hover:scale-105 transition-transform duration-500"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
@@ -952,14 +1339,14 @@ export default function App() {
               <div className="px-4 md:px-8 py-2 md:py-4 w-full">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-800 text-lg md:text-xl">Kabar Terbaru</h3>
-                  <button onClick={() => setCurrentView('news')} className={`text-sm ${t.primaryText} font-medium hover:underline transition-colors`}>Lihat Semua</button>
+                  <button onClick={() => handleNavigate('news')} className={`text-sm ${t.primaryText} font-medium hover:underline transition-colors`}>Lihat Semua</button>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {isLoadingNews ? (
                     // Skeleton loading
                     Array.from({ length: 4 }).map((_, idx) => (
-                      <div key={idx} className="bg-white p-2.5 rounded-xl shadow-sm flex gap-3 items-center border border-gray-100 animate-pulse">
+                      <div key={`news-skeleton-${idx}`} className="bg-white p-2.5 rounded-xl shadow-sm flex gap-3 items-center border border-gray-100 animate-pulse">
                         <div className="w-16 h-16 rounded-lg bg-gray-200 shrink-0"></div>
                         <div className="flex-1 min-w-0">
                           <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
@@ -971,7 +1358,7 @@ export default function App() {
                   ) : newsList.length > 0 ? (
                     newsList.slice(0, 4).map((news, idx) => (
                       <NewsCard 
-                        key={idx}
+                        key={news.link || `news-${idx}`}
                         title={news.title}
                         date={new Date(news.pubDate.replace(' ', 'T')).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         image={news.thumbnail || `https://picsum.photos/seed/news${idx}/400/300`}
@@ -992,7 +1379,7 @@ export default function App() {
               {(isLoading || data?.footer) && (
                 <footer className="bg-white border-t border-gray-200 mt-auto pt-10 pb-24 md:pb-10 px-6 md:px-12 w-full overflow-hidden">
                   {isLoading ? (
-                    <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full animate-pulse">
+                    <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full animate-pulse">
                       <div className="flex flex-col items-center md:items-start w-full">
                         <div className="h-6 bg-gray-200 rounded w-48 mb-2"></div>
                         <div className="h-4 bg-gray-200 rounded w-64"></div>
@@ -1007,9 +1394,9 @@ export default function App() {
                       </div>
                     </div>
                   ) : (
-                    <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full">
+                    <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full">
                       <div className="flex flex-col items-center md:items-start text-center md:text-left w-full">
-                        <h3 className="text-lg font-bold text-gray-800">{data?.header?.judul || "MIS IT Al Uswah"}</h3>
+                        <h3 className="text-lg font-bold text-gray-800">{data?.header?.judul || "AluswahGO"}</h3>
                         <p className="text-gray-500 text-sm mt-1 max-w-sm">
                           {data?.footer?.teks_cta || "Mencetak generasi Qur'ani, Mandiri, dan Berprestasi."}
                         </p>
@@ -1050,7 +1437,7 @@ export default function App() {
                   )}
 
                   {/* Address & Copyright */}
-                  <div className="max-w-4xl mx-auto mt-8 pt-6 border-t border-gray-50 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-400 w-full">
+                  <div className="max-w-[1600px] mx-auto mt-8 pt-6 border-t border-gray-50 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-400 w-full">
                     {isLoading ? (
                       <>
                         <div className="h-4 bg-gray-200 rounded w-full md:w-1/2 animate-pulse"></div>
@@ -1062,7 +1449,7 @@ export default function App() {
                           <MapPin size={14} className="shrink-0 mt-0.5 md:mt-0" />
                           <span className="flex-1 leading-relaxed">{data?.footer?.alamat || data?.profil?.alamat}</span>
                         </div>
-                        <p className="shrink-0 w-full text-center md:text-right md:w-auto">© {new Date().getFullYear()} {data?.header?.judul || "MIS IT Al Uswah"}.</p>
+                        <p className="shrink-0 w-full text-center md:text-right md:w-auto">© {new Date().getFullYear()} {data?.header?.judul || "AluswahGO"}.</p>
                       </>
                     )}
                   </div>
@@ -1071,20 +1458,19 @@ export default function App() {
               {(!isLoading && !data?.footer) && <div className="h-28 md:h-8 shrink-0" />}
 
             </div>
+            )}
           </main>
 
         </div>
 
         {/* Bottom Navigation Bar (Mobile & Tablet) */}
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-200 px-2 md:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex justify-around items-center shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
-          <BottomNavItem icon={<Home size={24} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => setCurrentView('home')} />
-          <BottomNavItem icon={<PieChart size={24} />} label="Radial" t={t} onClick={() => window.open(data?.profil?.link_radial || 'https://ai.studio/apps/0eda68f0-023c-4889-a38a-2a21d26e60af', '_blank')} />
-          <BottomNavItem icon={<FileText size={24} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => setCurrentView('spmb')} />
-          <BottomNavItem icon={<User size={24} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => setCurrentView('profil')} />
+          <BottomNavItem icon={<Home size={24} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
+          <BottomNavItem icon={<PieChart size={24} />} label="Radial" active={currentView === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
+          <BottomNavItem icon={<MessageCircle size={24} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
+          <BottomNavItem icon={<FileText size={24} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
+          <BottomNavItem icon={<User size={24} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
         </nav>
-
-        {/* AI Chatbot */}
-        <Chatbot t={t} />
 
         {/* Notification Detail Modal */}
         <AnimatePresence>
@@ -1120,6 +1506,48 @@ export default function App() {
           )}
         </AnimatePresence>
 
+        {/* Exit Confirmation Modal */}
+        <AnimatePresence>
+          {showExitModal && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+              >
+                <div className="p-6 text-center">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <AlertCircle className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Keluar Aplikasi</h3>
+                  <p className="text-gray-500 mb-6">Apakah anda yakin ingin keluar dari AluswahGo?</p>
+                  
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={cancelExit}
+                      className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      onClick={confirmExit}
+                      className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-colors shadow-sm shadow-red-500/30"
+                    >
+                      Ya, Keluar
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Video Detail Modal */}
         <AnimatePresence>
           {selectedVideo && (
@@ -1131,7 +1559,7 @@ export default function App() {
         </AnimatePresence>
 
         {/* Sub-Views (Routing) */}
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {currentView !== 'home' && (
             <motion.div
               key="subview-container"
@@ -1143,16 +1571,26 @@ export default function App() {
             >
               <ErrorBoundary>
                 <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center"><div className={`w-8 h-8 border-4 border-t-transparent ${t.primaryText} rounded-full animate-spin border-opacity-50`}></div></div>}>
-                  {currentView === 'quran' && <QuranView t={t} onBack={() => setCurrentView('home')} />}
-                  {currentView === 'doa' && <DoaView t={t} onBack={() => setCurrentView('home')} />}
-                  {currentView === 'kalender' && <KalenderView t={t} onBack={() => setCurrentView('home')} />}
-                  {currentView === 'spmb' && <SPMBView t={t} onBack={() => setCurrentView('home')} />}
-                  {currentView === 'kritik' && <KritikView t={t} onBack={() => setCurrentView('home')} />}
-                  {currentView === 'program' && <ProgramView t={t} onBack={() => setCurrentView('home')} />}
-                  {currentView === 'ekstra' && <EkstraView t={t} onBack={() => setCurrentView('home')} />}
-                  {currentView === 'sarpras' && <SarprasView t={t} onBack={() => setCurrentView('home')} />}
-                  {currentView === 'news' && <NewsListView t={t} newsList={newsList} onBack={() => setCurrentView('home')} onSelectNews={setSelectedNews} />}
-                  {currentView === 'profil' && <ProfilView t={t} onBack={() => setCurrentView('home')} />}
+                  {currentView === 'quran' && <QuranView t={t} title={getServiceTitle('quran')} onBack={handleBack} />}
+                  {currentView === 'doa' && <DoaView t={t} title={getServiceTitle('doa')} onBack={handleBack} />}
+                  {currentView === 'kalender' && <KalenderView t={t} title={getServiceTitle('kalender')} onBack={handleBack} />}
+                  {currentView === 'spmb' && <SPMBView t={t} title={getServiceTitle('spmb')} onBack={handleBack} onNavigate={handleNavigate} />}
+                  {currentView === 'spmb-form' && <SPMBModal t={t} onClose={handleBack} />}
+                  {currentView === 'kritik' && <KritikView t={t} title={getServiceTitle('kritik')} onBack={handleBack} />}
+                  {currentView === 'program' && <ProgramView t={t} title={getServiceTitle('program')} onBack={handleBack} />}
+                  {currentView === 'ekstra' && <EkstraView t={t} title={getServiceTitle('ekstra')} onBack={handleBack} />}
+                  {currentView === 'sarpras' && <SarprasView t={t} title={getServiceTitle('sarpras')} onBack={handleBack} />}
+                  {currentView === 'news' && <NewsListView t={t} newsList={newsList} onBack={handleBack} onSelectNews={setSelectedNews} />}
+                  {currentView === 'profil' && <ProfilView t={t} onBack={handleBack} />}
+                  {currentView === 'absensi' && <AbsensiView t={t} title={getServiceTitle('absensi')} onBack={handleBack} />}
+                  {currentView === 'affiliasi' && <AffiliasiView t={t} title={getServiceTitle('affiliasi')} onBack={handleBack} />}
+                  {currentView === 'yaumiyah' && <YaumiyahView t={t} title={getServiceTitle('yaumiyah')} onBack={handleBack} />}
+                  {currentView === 'radial' && <RadialView t={t} onBack={handleBack} />}
+                  {currentView === 'review' && <ReviewView t={t} title={getServiceTitle('review')} onBack={handleBack} />}
+                  {currentView === 'review-list' && <ReviewListView t={t} data={data?.review || []} onBack={handleBack} />}
+                  {currentView === 'galeri' && <GaleriView t={t} onBack={handleBack} />}
+                  {currentView === 'chatbot' && <ChatbotView t={t} onBack={handleBack} />}
+                  {currentView === 'notification-center' && <NotificationCenterView t={t} onBack={handleBack} onSelectNotif={handleNotifClick} />}
                 </Suspense>
               </ErrorBoundary>
             </motion.div>

@@ -1,11 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, MapPin, Target, Users, BookOpen, Award, GraduationCap, Globe, Facebook, Instagram, Youtube, Video } from 'lucide-react';
 import { ThemeConfig } from '../types';
 import { useData } from '../context/DataContext';
 
+const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=2096545075';
+
 export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
   const { data, isLoading } = useData();
+  const profil = data?.profil || {};
+  
+  const [spmbWa, setSpmbWa] = useState<{number: string, message: string}>({
+    number: profil.wa || '6282333427597',
+    message: ''
+  });
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -17,7 +25,52 @@ export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onBack]);
 
-  const profil = data?.profil || {};
+  useEffect(() => {
+    const fetchSpmbWa = async () => {
+      try {
+        const response = await fetch(`${SHEETS_CSV_URL}&t=${new Date().getTime()}`);
+        if (!response.ok) return;
+        const csvText = await response.text();
+        
+        const rows = csvText.split('\n').map(row => {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          for (let i = 0; i < row.length; i++) {
+            if (row[i] === '"') {
+              inQuotes = !inQuotes;
+            } else if (row[i] === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += row[i];
+            }
+          }
+          result.push(current.trim());
+          return result;
+        });
+
+        let waNumber = spmbWa.number;
+        let waMessage = 'Halo, saya ingin meminta informasi terkait sekolah dan SPMB.';
+
+        if (rows.length > 1 && rows[1][12]) {
+          let wa = rows[1][12].replace(/"/g, '').replace(/\D/g, '');
+          if (wa.startsWith('0')) wa = '62' + wa.substring(1);
+          if (wa) waNumber = wa;
+        }
+        if (rows.length > 2 && rows[2][12]) {
+          let msg = rows[2][12].replace(/"/g, '');
+          if (msg.trim()) waMessage = msg;
+        }
+
+        setSpmbWa({ number: waNumber, message: waMessage });
+      } catch (error) {
+        console.error("Failed to fetch SPMB WA data", error);
+      }
+    };
+
+    fetchSpmbWa();
+  }, []);
 
   const stats = [
     { label: 'Guru & Staf', value: profil.jumlah_guru || '32', icon: <Users size={24} /> },
@@ -66,8 +119,17 @@ export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }
           <div className="absolute -left-10 bottom-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
           
           <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center">
-            <div className={`w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 border-4 border-white/20 ${t.primaryText}`}>
-              <span className="text-3xl font-extrabold">MI</span>
+            <div className={`w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 border-4 border-white/20 overflow-hidden ${t.primaryText}`}>
+              {data?.header?.logo ? (
+                <img 
+                  src={data.header.logo.includes('drive.google.com/file/d/') ? `https://drive.google.com/uc?export=view&id=${data.header.logo.match(/\/d\/(.*?)\//)?.[1]}` : data.header.logo} 
+                  alt="Logo" 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="text-3xl font-extrabold">MI</span>
+              )}
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2 drop-shadow-md">
               {profil.nama_sekolah || 'MIS Islam Terpadu Al Uswah'}
@@ -129,7 +191,7 @@ export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }
             <h3 className="text-xl font-bold text-gray-800 mb-6">Hubungi Kami</h3>
             
             <a 
-              href={`https://wa.me/${waNumber}?text=Halo%2C%20saya%20ingin%20meminta%20informasi%20terkait%20sekolah%20dan%20SPMB.`} 
+              href={`https://wa.me/${spmbWa.number}?text=${encodeURIComponent(spmbWa.message)}`} 
               target="_blank" 
               rel="noreferrer"
               className="inline-flex flex-wrap items-center justify-center gap-3 px-4 md:px-8 py-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-bold text-base md:text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 mb-8 w-full md:w-auto"

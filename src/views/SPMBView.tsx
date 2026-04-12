@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, RefreshCw, FileText, Users, CalendarCheck, X, MessageCircle, BarChart3, Building } from 'lucide-react';
 import { ThemeConfig } from '../types';
-import { SPMBModal } from '../components/SPMBModal';
 import { GlobalRunningText } from '../components/GlobalRunningText';
+import { LazyImage } from '../components/LazyImage';
 
-const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/gviz/tq?tqx=out:csv&sheet=dataSPMB';
+const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=2096545075';
 
 interface SPMBData {
   tahun: string;
@@ -25,19 +25,18 @@ interface GlobalStats {
   waMessage: string;
 }
 
-export function SPMBView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
+export function SPMBView({ t, onBack, onNavigate, title }: { t: ThemeConfig, onBack: () => void, onNavigate: (view: string) => void, title?: string }) {
   const [data, setData] = useState<SPMBData[]>([]);
   const [globalStats, setGlobalStats] = useState<GlobalStats>({ alumni: 0, siswaAktif: 0, brochureUrl: '', waNumber: '', waMessage: '' });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [status, setStatus] = useState<'loading' | 'connected' | 'error'>('loading');
   const [showBrochure, setShowBrochure] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [showModal, setShowModal] = useState(false);
 
   const fetchData = async () => {
     setStatus('loading');
     try {
-      const response = await fetch(SHEETS_CSV_URL);
+      const response = await fetch(`${SHEETS_CSV_URL}&t=${new Date().getTime()}`);
       if (!response.ok) throw new Error("Network response was not ok");
       const csvText = await response.text();
       
@@ -56,7 +55,7 @@ export function SPMBView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) 
       });
 
       const parsedData: SPMBData[] = [];
-      const stats = { alumni: 0, siswaAktif: 0, brochureUrl: '', waNumber: '', waMessage: '' };
+      const stats = { alumni: 0, siswaAktif: 0, brochureUrl: '', waNumber: '', waMessage: 'Halo Admin, saya ingin bertanya tentang pendaftaran.' };
 
       if (rows.length > 1) {
           if (rows[1][7]) stats.alumni = parseInt(rows[1][7]) || 0;
@@ -65,11 +64,13 @@ export function SPMBView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) 
           if (rows[1][12]) {
             let wa = rows[1][12].replace(/"/g, '').replace(/\D/g, '');
             if (wa.startsWith('0')) wa = '62' + wa.substring(1);
-            stats.waNumber = wa;
+            if (wa) stats.waNumber = wa;
           }
       }
       if (rows.length > 2) {
-          if (rows[2][12]) stats.waMessage = rows[2][12].replace(/"/g, '');
+          if (rows[2][12] && rows[2][12].replace(/"/g, '').trim()) {
+            stats.waMessage = rows[2][12].replace(/"/g, '');
+          }
       }
       setGlobalStats(stats);
 
@@ -128,13 +129,12 @@ export function SPMBView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) 
       if (e.key === 'Escape') {
         if (showBrochure) setShowBrochure(false);
         else if (showStats) setShowStats(false);
-        else if (showModal) setShowModal(false);
         else onBack();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onBack, showBrochure, showStats, showModal]);
+  }, [onBack, showBrochure, showStats]);
 
   const getRegistrationStatus = (item: SPMBData) => {
       if (item.statusText && (item.statusText.toLowerCase().includes('tutup') || item.statusText.toLowerCase().includes('closed'))) {
@@ -186,7 +186,7 @@ export function SPMBView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) 
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h2 className="font-bold text-lg leading-tight">Data SPMB</h2>
+            <h2 className="font-bold text-lg leading-tight">{title || "Data SPMB"}</h2>
             <p className="text-[10px] text-white/80 font-medium uppercase tracking-wider">MIS IT Al Uswah</p>
           </div>
         </div>
@@ -237,7 +237,7 @@ export function SPMBView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) 
                       <span className="text-[10px] text-white/90 uppercase font-semibold mt-1 block">Siswa Aktif</span>
                     </div>
                   </div>
-                  <button onClick={() => setShowModal(true)} className={`w-full ${t.primaryBg} text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}>
+                  <button onClick={() => onNavigate('spmb-form')} className={`w-full ${t.primaryBg} text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all transform active:scale-[0.98] flex items-center justify-center gap-2`}>
                     <span>Daftar Sekarang</span>
                   </button>
                 </div>
@@ -417,7 +417,8 @@ export function SPMBView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) 
               </div>
               <div className="p-4 overflow-y-auto bg-gray-50 flex-grow">
                 <div className="flex items-center justify-center min-h-[50vh]">
-                  <img src={globalStats.brochureUrl || "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7TTjOV3250sxJgXyVMTGvmzW41JUAbIKUb1W83-nh7gNQACd2RqhQLDgRcZSSKVkbloiapOEXjQxn0nr1wkGb55W6xTgFxB1xyB0AYNJkhQwY7ZvcMTEHbVXo8Jlz456wXZBPoFHvYMUnSU0oIJgmTtwKNpsoiPcLzrie134k3mUyXHaB4H3KGgq_Ccuv/s1280/photo_.%20950_y%20(1).jpg"} 
+                  <LazyImage src={globalStats.brochureUrl || "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7TTjOV3250sxJgXyVMTGvmzW41JUAbIKUb1W83-nh7gNQACd2RqhQLDgRcZSSKVkbloiapOEXjQxn0nr1wkGb55W6xTgFxB1xyB0AYNJkhQwY7ZvcMTEHbVXo8Jlz456wXZBPoFHvYMUnSU0oIJgmTtwKNpsoiPcLzrie134k3mUyXHaB4H3KGgq_Ccuv/s1280/photo_.%20950_y%20(1).jpg"} 
+                       containerClassName="w-full h-full flex items-center justify-center"
                        className="max-w-full h-auto object-contain rounded-lg shadow-sm" alt="Brosur SPMB" />
                 </div>
               </div>
@@ -517,10 +518,6 @@ export function SPMBView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) 
               </div>
             </motion.div>
           </motion.div>
-        )}
-
-        {showModal && (
-          <SPMBModal t={t} onClose={() => setShowModal(false)} />
         )}
       </AnimatePresence>
     </motion.div>

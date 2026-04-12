@@ -6,7 +6,7 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMon
 import { id } from 'date-fns/locale';
 import { useData } from '../context/DataContext';
 
-export function KalenderView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
+export function KalenderView({ t, onBack, title }: { t: ThemeConfig, onBack: () => void, title?: string }) {
   const { data, isLoading } = useData();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [hijriDate, setHijriDate] = useState<string>('Memuat...');
@@ -95,7 +95,7 @@ export function KalenderView({ t, onBack }: { t: ThemeConfig, onBack: () => void
         <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h2 className="font-bold text-lg">Kalender Akademik & Hijriyah</h2>
+        <h2 className="font-bold text-lg">{title || "Kalender Akademik & Hijriyah"}</h2>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6">

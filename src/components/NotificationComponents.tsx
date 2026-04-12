@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, Info, AlertTriangle, CheckCheck, X } from 'lucide-react';
+import { CheckCircle2, Info, AlertTriangle, CheckCheck, X, FileText, Award, PlayCircle, PenTool, Star, Bell } from 'lucide-react';
 import { Notification, ThemeConfig } from '../types';
+import { LazyImage } from './LazyImage';
 
 export const NotificationModal: React.FC<{ notif: Notification, onClose: () => void, t: ThemeConfig }> = ({ notif, onClose, t }) => {
   useEffect(() => {
@@ -31,7 +32,7 @@ export const NotificationModal: React.FC<{ notif: Notification, onClose: () => v
       >
         {notif.image && (
           <div className="w-full h-48 relative">
-            <img src={notif.image} alt={notif.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <LazyImage src={notif.image} alt={notif.title} containerClassName="w-full h-full" className="w-full h-full object-cover" />
             <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-md transition-colors">
               <X size={20} />
             </button>
@@ -91,9 +92,42 @@ export const NotifItem: React.FC<{ notif: Notification, onClick: () => void, t: 
   };
 
   let icon;
-  if (notif.type === 'success') icon = <CheckCircle2 size={20} className={t.primaryText} />;
-  else if (notif.type === 'info') icon = <Info size={20} className="text-blue-500" />;
-  else icon = <AlertTriangle size={20} className="text-amber-500" />;
+  if (notif.image) {
+    icon = <LazyImage src={notif.image} alt="Thumbnail" containerClassName="w-10 h-10 rounded-lg shrink-0" className="w-full h-full object-cover" />;
+  } else if (notif.type === 'success') {
+    icon = <CheckCircle2 size={20} className={t.primaryText} />;
+  } else if (notif.type === 'info') {
+    icon = <Info size={20} className="text-blue-500" />;
+  } else if (notif.type === 'news') {
+    icon = <FileText size={20} className={t.primaryText} />;
+  } else if (notif.type === 'prestasi') {
+    icon = <Award size={20} className="text-amber-500" />;
+  } else if (notif.type === 'karya') {
+    icon = <PenTool size={20} className="text-purple-500" />;
+  } else if (notif.type === 'video') {
+    icon = <PlayCircle size={20} className="text-red-500" />;
+  } else {
+    icon = <AlertTriangle size={20} className="text-amber-500" />;
+  }
+
+  let typeIcon;
+  let typeLabel = '';
+  if (notif.type === 'news') {
+    typeIcon = <FileText size={12} className="mr-1 inline" />;
+    typeLabel = 'Berita';
+  } else if (notif.type === 'video') {
+    typeIcon = <PlayCircle size={12} className="mr-1 inline" />;
+    typeLabel = 'Video';
+  } else if (notif.type === 'karya') {
+    typeIcon = <Star size={12} className="mr-1 inline" />;
+    typeLabel = 'Karya Siswa';
+  } else if (notif.type === 'prestasi') {
+    typeIcon = <Award size={12} className="mr-1 inline" />;
+    typeLabel = 'Prestasi';
+  } else {
+    typeIcon = <Bell size={12} className="mr-1 inline" />;
+    typeLabel = 'Notifikasi';
+  }
 
   return (
     <motion.div 
@@ -106,8 +140,8 @@ export const NotifItem: React.FC<{ notif: Notification, onClick: () => void, t: 
       </div>
       <div className="flex-1">
         <div className="flex justify-between items-start mb-1">
-          <h5 className={`text-sm font-semibold pr-4 ${notif.unread ? 'text-gray-900' : 'text-gray-700'}`}>{notif.title}</h5>
-          <div className="flex items-center h-5">
+          <h5 className={`text-sm font-semibold pr-4 line-clamp-2 ${notif.unread ? 'text-gray-900' : 'text-gray-700'}`}>{notif.desc}</h5>
+          <div className="flex items-center h-5 shrink-0">
             <AnimatePresence mode="wait">
               {isReadAnimating ? (
                 <motion.div
@@ -129,8 +163,10 @@ export const NotifItem: React.FC<{ notif: Notification, onClick: () => void, t: 
             </AnimatePresence>
           </div>
         </div>
-        <p className="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">{notif.desc}</p>
-        <p className="text-[10px] text-gray-400 font-medium">{notif.time}</p>
+        <div className="flex items-center text-[10px] text-gray-500 font-medium mt-1">
+          {typeIcon}
+          <span>{typeLabel} • {notif.time}</span>
+        </div>
       </div>
     </motion.div>
   );
