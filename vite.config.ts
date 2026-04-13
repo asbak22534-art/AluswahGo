@@ -25,17 +25,17 @@ export default defineConfig(({mode}) => {
           display: 'standalone',
           icons: [
             {
-              src: 'https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB',
+              src: '/logo.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB',
+              src: '/logo.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB',
+              src: '/logo.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
