@@ -46,7 +46,7 @@ export default function RadialView({ t, onBack }: RadialViewProps) {
     setIsLoading(true);
     setError('');
 
-    const normalizedInputNisn = inputNisn.trim().replace(/^0+/, '');
+    const normalizedInputNisn = inputNisn.trim();
 
     const fetchGviz = async (gid: string, nisn: string) => {
       const tryFetch = async (q: string) => {
