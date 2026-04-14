@@ -11,6 +11,7 @@ export default defineConfig(({mode}) => {
       react(), 
       tailwindcss(),
       VitePWA({
+        filename: 'OneSignalSDKWorker.js',
         registerType: 'autoUpdate',
         workbox: {
           importScripts: ["https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js"]
