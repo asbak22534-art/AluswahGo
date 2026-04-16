@@ -295,6 +295,7 @@ function doGet(e) {
         data = {
           doa: getSheetData(ss, "Doa"),
           dzikir: getSheetData(ss, "Dzikir"),
+          asmaulHusna: getSheetData(ss, "AsmaulHusna"),
           kalender: getSheetData(ss, "Kalender"),
           program: getSheetData(ss, "Program"),
           ekstra: getSheetData(ss, "Ekstra"),
@@ -312,6 +313,9 @@ function doGet(e) {
         break;
       case "getDzikir":
         data = getSheetData(ss, "Dzikir");
+        break;
+      case "getAsmaulHusna":
+        data = getSheetData(ss, "AsmaulHusna");
         break;
       case "getKalender":
         data = getSheetData(ss, "Kalender");
@@ -429,8 +433,12 @@ function initializeSheets() {
       headers: ["tipe", "arab", "latin", "arti"]
     },
     {
+      name: "AsmaulHusna",
+      headers: ["urutan", "latin", "arab", "arti"]
+    },
+    {
       name: "Kalender",
-      headers: ["tanggal", "kegiatan", "is_libur"]
+      headers: ["tanggal", "jenis", "kegiatan", "is_libur"]
     },
     {
       name: "Program",

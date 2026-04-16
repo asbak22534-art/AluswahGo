@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Award, X, ChevronLeft, ChevronRight, Calendar, Tent, FlaskConical, ShieldAlert, Music, Palette, BookOpen } from 'lucide-react';
+import { ArrowLeft, Award, X, ChevronLeft, ChevronRight, Calendar, Tent, FlaskConical, ShieldAlert, Music, Palette, BookOpen, ArrowRight } from 'lucide-react';
 import { ThemeConfig } from '../types';
 import { Slideshow } from '../components/Slideshow';
 import { useData } from '../context/DataContext';
@@ -60,31 +60,45 @@ export function EkstraView({ t, onBack, title }: { t: ThemeConfig, onBack: () =>
             </h3>
             
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {Array.from({ length: 4 }).map((_, idx) => (
-                  <div key={idx} className="bg-gray-50 p-5 rounded-2xl border border-gray-100 animate-pulse flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gray-200 shrink-0"></div>
-                    <div className="flex-1">
-                      <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div key={idx} className="bg-white rounded-2xl border border-gray-100 animate-pulse flex flex-col overflow-hidden">
+                    <div className="w-full aspect-video bg-gray-200"></div>
+                    <div className="p-5">
+                      <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
+                      <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : ekstrasData.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {ekstrasData.map(ekstra => (
                   <button 
                     key={ekstra.id}
                     onClick={() => setSelectedEkstra(ekstra.id)}
-                    className="bg-gray-50 p-5 rounded-2xl border border-gray-100 hover:shadow-md transition-all text-left flex items-start gap-4 active:scale-95"
+                    className="group relative bg-white rounded-3xl border border-gray-100 hover:border-gray-200 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 text-left flex flex-col overflow-hidden active:scale-[0.98]"
                   >
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${ekstra.bg} ${ekstra.color}`}>
-                      {ekstra.icon}
+                    <div className="w-full aspect-[4/3] sm:aspect-video bg-gray-100 relative overflow-hidden">
+                      <img 
+                        src={ekstra.images[0]} 
+                        alt={ekstra.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-2.5 rounded-2xl shadow-sm transform group-hover:scale-110 transition-transform duration-300">
+                        {React.cloneElement(ekstra.icon as React.ReactElement<{ size?: number, className?: string }>, { size: 20, className: ekstra.color.replace('text-', 'text-') })}
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-gray-800 text-lg mb-1">{ekstra.title}</h4>
-                      <p className="text-sm text-gray-500 leading-relaxed">{ekstra.shortDesc}</p>
+                    <div className="p-6 flex-1 flex flex-col relative bg-white">
+                      <h4 className="font-bold text-gray-900 text-xl mb-2 tracking-tight line-clamp-1">{ekstra.title}</h4>
+                      <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-4">{ekstra.shortDesc}</p>
+                      <div className={`mt-auto flex items-center gap-2 text-sm font-bold ${ekstra.color} opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300`}>
+                        Lihat Detail <ArrowRight size={16} />
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -111,17 +125,28 @@ export function EkstraView({ t, onBack, title }: { t: ThemeConfig, onBack: () =>
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg md:max-w-4xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] relative"
             >
-              <div className="relative shrink-0">
-                <Slideshow images={activeEkstra.images} t={t} />
-                <button onClick={() => setSelectedEkstra(null)} className="absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full backdrop-blur-md transition-colors z-20">
+              {/* Close button for desktop */}
+              <button onClick={() => setSelectedEkstra(null)} className="hidden md:flex absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors z-20">
+                <X size={20} />
+              </button>
+
+              <div className="relative shrink-0 md:w-1/2 border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50 flex flex-col justify-center">
+                <Slideshow 
+                  images={activeEkstra.images} 
+                  t={t} 
+                  className="aspect-square w-full bg-gray-50" 
+                  objectFit="object-cover" 
+                />
+                {/* Close button for mobile */}
+                <button onClick={() => setSelectedEkstra(null)} className="md:hidden absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full backdrop-blur-md transition-colors z-20">
                   <X size={20} />
                 </button>
               </div>
               
-              <div className="p-6 overflow-y-auto custom-scrollbar">
-                <div className="flex items-center gap-3 mb-3">
+              <div className="p-6 overflow-y-auto custom-scrollbar md:w-1/2 flex flex-col">
+                <div className="flex items-center gap-3 mb-3 md:pr-10">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${activeEkstra.bg} ${activeEkstra.color}`}>
                     {React.cloneElement(activeEkstra.icon as React.ReactElement<{ size?: number }>, { size: 20 })}
                   </div>
@@ -131,7 +156,7 @@ export function EkstraView({ t, onBack, title }: { t: ThemeConfig, onBack: () =>
                 <p className="text-gray-600 leading-relaxed mb-6">{activeEkstra.desc}</p>
                 
                 {activeEkstra.schedule && activeEkstra.schedule.length > 0 && (
-                  <div className="bg-gray-50 p-4 rounded-2xl text-left border border-gray-100">
+                  <div className="bg-gray-50 p-4 rounded-2xl text-left border border-gray-100 mb-6">
                     <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                       <Calendar size={18} className={t.primaryText} />
                       Jadwal Pelaksanaan
@@ -148,12 +173,14 @@ export function EkstraView({ t, onBack, title }: { t: ThemeConfig, onBack: () =>
                   </div>
                 )}
                 
-                <button 
-                  onClick={() => setSelectedEkstra(null)} 
-                  className={`w-full py-3.5 mt-6 rounded-xl font-bold text-white ${t.primaryBg} active:scale-[0.98] transition-transform`}
-                >
-                  Tutup Detail
-                </button>
+                <div className="mt-auto pt-4">
+                  <button 
+                    onClick={() => setSelectedEkstra(null)} 
+                    className={`w-full py-3.5 rounded-xl font-bold text-white ${t.primaryBg} active:scale-[0.98] transition-transform`}
+                  >
+                    Tutup Detail
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

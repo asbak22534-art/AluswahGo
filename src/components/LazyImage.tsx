@@ -24,7 +24,7 @@ export function LazyImage({ src, alt, className = "", containerClassName = "", .
         alt={alt}
         loading="lazy"
         onLoad={() => setIsLoaded(true)}
-        className={`w-full h-full object-cover ${className}`}
+        className={`w-full h-full ${className.includes('object-') ? '' : 'object-cover'} ${className}`}
         referrerPolicy="no-referrer"
         {...props}
       />

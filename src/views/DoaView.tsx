@@ -20,15 +20,23 @@ export type DzikirSheetItem = {
   arti: string;
 };
 
+export type AsmaulHusnaSheetItem = {
+  urutan: string | number;
+  latin: string;
+  arab: string;
+  arti: string;
+};
+
 const CATEGORIES = ['Semua', 'Sholat', 'Aktivitas'];
 
 export function DoaView({ t, onBack, title }: { t: ThemeConfig, onBack: () => void, title?: string }) {
   const { data, isLoading } = useData();
-  const [activeTab, setActiveTab] = useState<'doa' | 'dzikir'>('doa');
+  const [activeTab, setActiveTab] = useState<'asmaul-husna' | 'doa' | 'dzikir'>('asmaul-husna');
   const [activeDzikirType, setActiveDzikirType] = useState<'pagi-sugro' | 'pagi-kubro' | 'petang-sugro' | 'petang-kubro'>('pagi-sugro');
   
   const doaList: DoaSheetItem[] = data?.doa || [];
   const dzikirList: DzikirSheetItem[] = data?.dzikir || [];
+  const asmaulHusnaList: AsmaulHusnaSheetItem[] = data?.asmaulHusna || [];
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('Semua');
@@ -65,10 +73,22 @@ export function DoaView({ t, onBack, title }: { t: ThemeConfig, onBack: () => vo
 
       {/* Main Tabs */}
       <div className="bg-white border-b border-gray-200 shrink-0">
-        <div className="flex max-w-3xl mx-auto">
+        <div className="flex max-w-3xl mx-auto overflow-x-auto hide-scrollbar">
+          <button 
+            onClick={() => { setActiveTab('asmaul-husna'); setExpandedId(null); }}
+            className={`flex-1 min-w-[120px] py-3 text-center font-bold text-sm transition-colors relative ${activeTab === 'asmaul-husna' ? t.primaryText : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Database size={18} />
+              Asmaul Husna
+            </div>
+            {activeTab === 'asmaul-husna' && (
+              <motion.div layoutId="activeTab" className={`absolute bottom-0 left-0 right-0 h-1 ${t.primaryBg} rounded-t-full`} />
+            )}
+          </button>
           <button 
             onClick={() => { setActiveTab('doa'); setExpandedId(null); }}
-            className={`flex-1 py-3 text-center font-bold text-sm transition-colors relative ${activeTab === 'doa' ? t.primaryText : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 min-w-[120px] py-3 text-center font-bold text-sm transition-colors relative ${activeTab === 'doa' ? t.primaryText : 'text-gray-500 hover:text-gray-700'}`}
           >
             <div className="flex items-center justify-center gap-2">
               <Book size={18} />
@@ -80,7 +100,7 @@ export function DoaView({ t, onBack, title }: { t: ThemeConfig, onBack: () => vo
           </button>
           <button 
             onClick={() => { setActiveTab('dzikir'); setExpandedId(null); }}
-            className={`flex-1 py-3 text-center font-bold text-sm transition-colors relative ${activeTab === 'dzikir' ? t.primaryText : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 min-w-[120px] py-3 text-center font-bold text-sm transition-colors relative ${activeTab === 'dzikir' ? t.primaryText : 'text-gray-500 hover:text-gray-700'}`}
           >
             <div className="flex items-center justify-center gap-2">
               <Sun size={18} />
@@ -147,7 +167,49 @@ export function DoaView({ t, onBack, title }: { t: ThemeConfig, onBack: () => vo
       <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
         <div className="max-w-3xl mx-auto space-y-3 pb-20">
           
-          {activeTab === 'doa' ? (
+          {activeTab === 'asmaul-husna' ? (
+            asmaulHusnaList.length === 0 ? (
+              <div className="text-center py-16 mt-4 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                <Database size={48} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Data Asmaul Husna Kosong</h3>
+                <p className="text-gray-500 max-w-sm mx-auto text-sm">
+                  Data Asmaul Husna belum tersedia. Nantinya data ini akan ditarik secara otomatis dari Google Sheets.
+                </p>
+                <div className="mt-6 inline-block text-left bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs text-gray-600">
+                  <p className="font-bold mb-2">Format Kolom Google Sheets (Sheet: AsmaulHusna):</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li><code className="bg-white px-1 rounded">urutan</code> (Angka 1-99)</li>
+                    <li><code className="bg-white px-1 rounded">latin</code> (Teks Latin)</li>
+                    <li><code className="bg-white px-1 rounded">arab</code> (Teks Arab)</li>
+                    <li><code className="bg-white px-1 rounded">arti</code> (Terjemahan)</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {asmaulHusnaList.map((item, index) => (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                    key={`asmaul-${index}`} 
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-4 flex items-center gap-4"
+                  >
+                    <div className={`w-12 h-12 shrink-0 rounded-full ${t.primaryLightBg} ${t.primaryText} flex items-center justify-center font-bold text-lg`}>
+                      {item.urutan || index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-800">{item.latin}</h4>
+                      <p className="text-xs text-gray-500 line-clamp-1">{item.arti}</p>
+                    </div>
+                    <div className="text-2xl font-arabic text-right text-gray-900" dir="rtl">
+                      {item.arab}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )
+          ) : activeTab === 'doa' ? (
             doaList.length === 0 ? (
               <div className="text-center py-16 mt-4 bg-white rounded-3xl border border-gray-100 shadow-sm">
                 <Database size={48} className="mx-auto text-gray-300 mb-4" />

@@ -176,12 +176,11 @@ export function AffiliasiView({ t, onBack, title }: { t: ThemeConfig, onBack: ()
                   className="bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-200/50 border border-gray-100 flex flex-col group hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
                   {item.urlGambar && (
-                    <div className="h-48 p-6 bg-gray-50/50 flex items-center justify-center border-b border-gray-100 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-50/80"></div>
+                    <div className="h-48 p-8 bg-white flex items-center justify-center border-b border-gray-100 relative overflow-hidden group-hover:bg-gray-50/50 transition-colors duration-300">
                       <LazyImage 
                         src={item.urlGambar} 
                         alt={item.judul} 
-                        containerClassName="w-full h-full flex items-center justify-center"
+                        containerClassName="w-full h-full flex items-center justify-center bg-transparent"
                         className="max-w-full max-h-full object-contain relative z-10 drop-shadow-sm group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${item.judul}/400/300`;

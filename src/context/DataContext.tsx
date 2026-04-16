@@ -6,6 +6,7 @@ export type AppData = {
   profil: Record<string, string>;
   doa: any[];
   dzikir: any[];
+  asmaulHusna: any[];
   kalender: any[];
   program: any[];
   ekstra: any[];

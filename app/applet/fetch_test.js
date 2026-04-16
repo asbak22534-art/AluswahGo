@@ -1,14 +1,6 @@
-const https = require('https');
-
-https.get('https://script.google.com/macros/s/AKfycby6a5GzCbHy8NjxOVF7OeGWogdLpEJlXarBDeiG_0BlHtoHDpmKbOEaIf1qzcbN2KpD/exec?action=getHomeData', (res) => {
+import https from 'https';
+https.get('https://raw.githubusercontent.com/guangrei/Json-Indonesia-holidays/master/calendar.json', (res) => {
   let data = '';
-  res.on('data', (chunk) => {
-    data += chunk;
-  });
-  res.on('end', () => {
-    const json = JSON.parse(data);
-    console.log(JSON.stringify(json.data.review).substring(0, 500));
-  });
-}).on('error', (err) => {
-  console.log('Error: ' + err.message);
+  res.on('data', (chunk) => data += chunk);
+  res.on('end', () => console.log(data.substring(0, 500)));
 });

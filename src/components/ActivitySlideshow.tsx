@@ -9,9 +9,20 @@ export function ActivitySlideshow({ t }: { t: ThemeConfig }) {
   const [isPaused, setIsPaused] = useState(false);
   const indicatorContainerRef = useRef<HTMLDivElement>(null);
 
+  const formatImageUrl = (url: string | undefined) => {
+    if (!url) return '';
+    if (url.includes('drive.google.com/file/d/')) {
+      const match = url.match(/\/d\/(.*?)\//);
+      if (match && match[1]) {
+        return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+      }
+    }
+    return url;
+  };
+
   const activities = data?.galeri?.length ? data.galeri : Array.from({ length: 5 }).map((_, i) => ({
-    nama: `Kegiatan Sekolah ${i + 1}`,
-    gambar: `https://picsum.photos/seed/schoolact${i + 1}/800/400`
+    judul: `Kegiatan Sekolah ${i + 1}`,
+    linkGambar: `https://picsum.photos/seed/schoolact${i + 1}/800/400`
   }));
 
   const safeIndex = currentIndex < activities.length ? currentIndex : 0;
@@ -65,6 +76,8 @@ export function ActivitySlideshow({ t }: { t: ThemeConfig }) {
   }
 
   const currentActivity = activities[safeIndex];
+  const imageUrl = formatImageUrl(currentActivity?.gambar || currentActivity?.linkGambar) || `https://picsum.photos/seed/fallback/800/400`;
+  const title = currentActivity?.nama || currentActivity?.judul || 'Kegiatan';
 
   return (
     <div className="px-4 md:px-8 py-3 md:py-4 w-full">
@@ -77,8 +90,8 @@ export function ActivitySlideshow({ t }: { t: ThemeConfig }) {
         <AnimatePresence initial={false}>
           <motion.img
             key={safeIndex}
-            src={currentActivity?.gambar || `https://picsum.photos/seed/fallback/800/400`}
-            alt={currentActivity?.nama || 'Kegiatan'}
+            src={imageUrl}
+            alt={title}
             className="absolute inset-0 w-full h-full object-cover cursor-grab active:cursor-grabbing"
             variants={variants}
             initial="enter"
@@ -108,7 +121,7 @@ export function ActivitySlideshow({ t }: { t: ThemeConfig }) {
                 transition={{ duration: 0.3 }}
                 className="text-white font-bold text-lg md:text-2xl drop-shadow-lg"
               >
-                {currentActivity?.nama || 'Kegiatan'}
+                {title}
               </motion.h4>
             </AnimatePresence>
             

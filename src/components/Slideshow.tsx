@@ -2,7 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'motion/react';
 import { ThemeConfig } from '../types';
 
-export const Slideshow = ({ images, t }: { images: string[], t: ThemeConfig }) => {
+export const Slideshow = ({ 
+  images, 
+  t, 
+  className = "h-48 sm:h-64",
+  objectFit = "object-cover"
+}: { 
+  images: string[], 
+  t: ThemeConfig,
+  className?: string,
+  objectFit?: string
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const indicatorContainerRef = useRef<HTMLDivElement>(null);
@@ -42,7 +52,7 @@ export const Slideshow = ({ images, t }: { images: string[], t: ThemeConfig }) =
 
   return (
     <div 
-      className="relative w-full h-48 sm:h-64 bg-gray-900 overflow-hidden shrink-0 group"
+      className={`relative w-full overflow-hidden shrink-0 group ${className.includes('bg-') ? className : `bg-gray-900 ${className}`}`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -51,7 +61,7 @@ export const Slideshow = ({ images, t }: { images: string[], t: ThemeConfig }) =
           key={currentIndex}
           src={images[currentIndex]}
           alt={`Slide ${currentIndex + 1}`}
-          className="absolute inset-0 w-full h-full object-cover cursor-grab active:cursor-grabbing"
+          className={`absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing ${objectFit}`}
           variants={variants}
           initial="enter"
           animate="center"
