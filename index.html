@@ -27,6 +27,14 @@
               safari_web_id: "web.onesignal.auto.32866db8-e87d-48d6-8bf4-a7b54cca5ee4"
             });
             OneSignal.Slidedown.promptPush();
+
+            // Tambahkan listener agar saat notifikasi diklik, aplikasi akan fokus kembali
+            OneSignal.Notifications.addEventListener('click', function(event) {
+              const notificationData = event.notification;
+              console.log("Notifikasi diklik:", notificationData);
+              // Secara default Android akan membuka URL peluncur. Tapi jika aplikasi sedang running di background, kita paksa fokus.
+              window.focus();
+            });
           } catch (error) {
             console.error("OneSignal Init Error:", error);
           }
