@@ -26,6 +26,7 @@ import { NotificationCenterView } from './views/NotificationCenterView';
 import { VideoModal } from './components/VideoModal';
 import { ReviewSection } from './components/ReviewSection';
 import { ChatbotView } from './views/ChatbotView';
+import ReloadPrompt from './components/ReloadPrompt';
 
 // Lazy load views
 const QuranView = React.lazy(() => import('./views/QuranView').then(m => ({ default: m.QuranView })));
@@ -1597,6 +1598,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
+        <ReloadPrompt />
       </div>
     </div>
   );
