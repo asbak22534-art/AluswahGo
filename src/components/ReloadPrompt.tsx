@@ -4,6 +4,10 @@ import { CheckCircle2 } from 'lucide-react';
 
 export default function ReloadPrompt() {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isMuted] = useState(() => {
+    return sessionStorage.getItem('pwa-just-updated') === 'true';
+  });
+
   const {
     offlineReady: [offlineReady, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
@@ -11,6 +15,9 @@ export default function ReloadPrompt() {
   } = useRegisterSW({
     onRegistered(r) {
       console.log('SW Registered:', r);
+      if (sessionStorage.getItem('pwa-just-updated')) {
+        setTimeout(() => sessionStorage.removeItem('pwa-just-updated'), 5000);
+      }
     },
     onRegisterError(error) {
       console.log('SW registration error', error);
@@ -24,6 +31,7 @@ export default function ReloadPrompt() {
 
   const handleUpdate = () => {
     setIsUpdating(true);
+    sessionStorage.setItem('pwa-just-updated', 'true');
     // Beri jeda 1.5 detik agar pengguna bisa melihat notitikasinya sukses
     setTimeout(() => {
       updateServiceWorker(true);
@@ -40,12 +48,22 @@ export default function ReloadPrompt() {
     }
   }, [offlineReady]);
 
-  if (!offlineReady && !needRefresh) {
+  // Penghilang otomatis 3 menit untuk update
+  useEffect(() => {
+    if (needRefresh && !isUpdating) {
+      const timeoutId = setTimeout(() => {
+        close();
+      }, 180000); // 180 detik = 3 menit
+      return () => clearTimeout(timeoutId);
+    }
+  }, [needRefresh, isUpdating]);
+
+  if ((!offlineReady && !needRefresh) || isMuted) {
     return null;
   }
 
   return (
-    <div className="fixed bottom-0 right-0 z-50 p-4 m-4 bg-white rounded-lg shadow-xl border border-teal-100 flex flex-col gap-3 max-w-sm animate-in slide-in-from-bottom-5">
+    <div className={`fixed bottom-0 right-0 z-[9999] p-4 m-4 bg-white rounded-lg shadow-xl border border-teal-100 flex flex-col gap-3 max-w-sm animate-in slide-in-from-bottom-5 transition-opacity duration-500`}>
       <div className="text-sm font-medium text-gray-800">
         {isUpdating ? (
           <div className="flex items-center gap-2 text-teal-600">
@@ -53,9 +71,9 @@ export default function ReloadPrompt() {
             <span>Pembaruan sukses! Memuat ulang...</span>
           </div>
         ) : offlineReady ? (
-          <span>AluswahGO siap dijalankan secara offline.</span>
+          <span>MIS IT Al Uswah siap dijalankan secara offline.</span>
         ) : (
-          <span>Versi terbaru AluswahGO telah tersedia! Klik perbarui untuk memuat versi baru.</span>
+          <span>Versi terbaru MIS IT Al Uswah telah tersedia! Klik perbarui untuk memuat versi baru.</span>
         )}
       </div>
       

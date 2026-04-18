@@ -4,7 +4,7 @@ import {
   Wallet, CalendarCheck, MessageSquare, BookOpen, X, Palette,
   CheckCheck, BellOff, Book, Heart, Calendar, Users, Star, Award, Building, PieChart,
   Play, Facebook, Instagram, Youtube, MapPin, MessageCircle, Share2,
-  ClipboardCheck, Handshake, ChevronUp, AlertCircle, Image as ImageIcon
+  ClipboardCheck, Handshake, ChevronUp, AlertCircle, Image as ImageIcon, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Notification } from './types';
@@ -117,6 +117,33 @@ export default function App() {
   });
   const [showExitModal, setShowExitModal] = useState(false);
   const isExiting = React.useRef(false);
+
+  // Bagian Instalasi PWA
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    // Dengarkan event sebelum prompt instalasi muncul
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      // Simpan event untuk dipicu saat tombol diklik
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('currentView', currentView);
@@ -744,9 +771,9 @@ export default function App() {
   const getServiceTitle = (id: string) => orderedServices.find(s => s.id === id)?.label;
 
   return (
-    <div className="bg-gray-200 min-h-screen w-full max-w-full flex justify-center overflow-x-hidden">
+    <div className="fixed inset-0 bg-gray-200 w-full flex justify-center overflow-hidden">
       {/* Main Container */}
-      <div className="w-full max-w-full bg-gray-50 h-[100dvh] relative overflow-hidden flex flex-col lg:flex-row font-sans transition-colors duration-300">
+      <div className="w-full h-full bg-gray-50 relative overflow-hidden flex flex-col lg:flex-row font-sans transition-colors duration-300">
         
         {/* Sidebar (Desktop Only) */}
         <aside className="hidden lg:flex w-64 bg-white border-r border-gray-100 flex-col z-40 shadow-sm shrink-0">
@@ -777,6 +804,15 @@ export default function App() {
             </div>
           </div>
           <nav className="flex-1 px-4 py-6 flex flex-col gap-2">
+            {deferredPrompt && (
+              <button 
+                onClick={handleInstallClick}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-2 font-bold text-white shadow-sm hover:opacity-90 transition-opacity ${t.primaryBg}`}
+              >
+                <Download size={20} className="animate-bounce" />
+                <span>Instal Aplikasi</span>
+              </button>
+            )}
             <SidebarItem icon={<Home size={20} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
             <SidebarItem icon={<PieChart size={20} />} label="Radial" active={currentView === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
             <SidebarItem icon={<FileText size={20} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
@@ -837,6 +873,17 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              {/* Install PWA Button (Mobile Top Bar) */}
+              {deferredPrompt && (
+                <button 
+                  onClick={handleInstallClick}
+                  className={`relative flex items-center justify-center p-2 rounded-full transition-colors active:scale-95 text-white shadow-md lg:hidden ${t.primaryBg}`}
+                  title="Instal Aplikasi"
+                >
+                  <Download size={18} className="animate-bounce" />
+                </button>
+              )}
+
               {/* Theme Toggle */}
               <button 
                 onClick={toggleTheme}

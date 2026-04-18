@@ -18,9 +18,9 @@ export default defineConfig(({mode}) => {
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'AluswahGO',
-          short_name: 'AluswahGO',
-          description: 'Portal Sekolah AluswahGO',
+          name: 'MIS IT Al Uswah',
+          short_name: 'Al Uswah',
+          description: 'Portal Sekolah MIS IT Al Uswah',
           theme_color: '#0d9488',
           background_color: '#ffffff',
           display: 'standalone',
