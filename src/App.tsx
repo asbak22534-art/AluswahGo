@@ -513,44 +513,6 @@ export default function App() {
         document.head.appendChild(appleIconLink);
       }
       appleIconLink.setAttribute('href', logoUrl);
-
-      // Update PWA manifest dynamically
-      let manifestLink = document.querySelector('link[rel="manifest"]');
-      if (!manifestLink) {
-        manifestLink = document.createElement('link');
-        manifestLink.setAttribute('rel', 'manifest');
-        document.head.appendChild(manifestLink);
-      }
-      
-      const manifest = {
-        name: appName,
-        short_name: appName,
-        description: `Portal Sekolah ${appName}`,
-        theme_color: '#0d9488',
-        background_color: '#ffffff',
-        display: 'standalone',
-        icons: [
-          {
-            src: logoUrl,
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: logoUrl,
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: logoUrl,
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      };
-      const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      const manifestURL = URL.createObjectURL(blob);
-      manifestLink.setAttribute('href', manifestURL);
     }
   }, [data?.header]);
 

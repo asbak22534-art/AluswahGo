@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -29,6 +29,16 @@ export default function ReloadPrompt() {
       updateServiceWorker(true);
     }, 1500);
   };
+
+  // Sembunyikan otomatis pesan "Aplikasi siap offline" setelah 3 detik
+  useEffect(() => {
+    if (offlineReady) {
+      const timeoutId = setTimeout(() => {
+        close();
+      }, 3000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [offlineReady]);
 
   if (!offlineReady && !needRefresh) {
     return null;

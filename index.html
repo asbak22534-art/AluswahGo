@@ -19,7 +19,9 @@
           try {
             await OneSignal.init({
               appId: "7a7e3936-e5ec-4287-b2ef-90792bb5a567",
-              safari_web_id: "web.onesignal.auto.32866db8-e87d-48d6-8bf4-a7b54cca5ee4"
+              safari_web_id: "web.onesignal.auto.32866db8-e87d-48d6-8bf4-a7b54cca5ee4",
+              serviceWorkerPath: "OneSignalSDKWorker.js",
+              serviceWorkerParam: { scope: "/" }
             });
             OneSignal.Slidedown.promptPush();
 
