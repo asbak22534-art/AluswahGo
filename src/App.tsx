@@ -518,28 +518,8 @@ export default function App() {
   useEffect(() => {
     if (data?.header) {
       // Update document title
-      const appName = data.header.nama_aplikasi || data.header['Nama Aplikasi'] || data.header.nama || data.header._row5 || data.header.judul || 'AluswahGO';
+      const appName = data.header.nama_aplikasi || data.header['Nama Aplikasi'] || data.header.nama || data.header._row5 || data.header.judul || 'MIS IT Al Uswah';
       document.title = appName;
-
-      const logoUrl = formatImageUrl(data.header.logo) || 'https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB';
-
-      // Update Favicon and Apple Touch Icon
-      let iconLink = document.querySelector('link[rel="icon"]');
-      if (!iconLink) {
-        iconLink = document.createElement('link');
-        iconLink.setAttribute('rel', 'icon');
-        iconLink.setAttribute('type', 'image/png');
-        document.head.appendChild(iconLink);
-      }
-      iconLink.setAttribute('href', logoUrl);
-
-      let appleIconLink = document.querySelector('link[rel="apple-touch-icon"]');
-      if (!appleIconLink) {
-        appleIconLink = document.createElement('link');
-        appleIconLink.setAttribute('rel', 'apple-touch-icon');
-        document.head.appendChild(appleIconLink);
-      }
-      appleIconLink.setAttribute('href', logoUrl);
     }
   }, [data?.header]);
 
@@ -783,7 +763,7 @@ export default function App() {
             ) : (
               <img 
                 src={formatImageUrl(data?.header?.logo) || "https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB"}
-                alt={`Logo ${data?.header?.judul || "AluswahGO"}`}
+                alt={`Logo ${data?.header?.judul || "MIS IT Al Uswah"}`}
                 className="w-10 h-10 rounded-xl object-cover shadow-sm shrink-0"
                 loading="lazy"
                 referrerPolicy="no-referrer"
@@ -797,7 +777,7 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "AluswahGO"}</h1>
+                  <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "MIS IT Al Uswah"}</h1>
                   <p className={`text-xs ${t.primaryText} font-medium transition-colors line-clamp-2`}>{data?.header?.sub_judul || "Portal Sekolah"}</p>
                 </>
               )}
@@ -844,7 +824,7 @@ export default function App() {
               ) : (
                 <img 
                   src={formatImageUrl(data?.header?.logo) || "https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB"}
-                  alt={`Logo ${data?.header?.judul || "AluswahGO"}`}
+                  alt={`Logo ${data?.header?.judul || "MIS IT Al Uswah"}`}
                   className="w-10 h-10 rounded-full object-cover shadow-sm shrink-0"
                   loading="lazy"
                   referrerPolicy="no-referrer"
@@ -858,7 +838,7 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "AluswahGO"}</h1>
+                    <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "MIS IT Al Uswah"}</h1>
                     <p className={`text-xs ${t.primaryText} font-medium transition-colors line-clamp-2`}>{data?.header?.sub_judul || "Sekolah Dasar Islam"}</p>
                   </>
                 )}
@@ -1406,7 +1386,7 @@ export default function App() {
                   ) : (
                     <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full">
                       <div className="flex flex-col items-center md:items-start text-center md:text-left w-full">
-                        <h3 className="text-lg font-bold text-gray-800">{data?.header?.judul || "AluswahGO"}</h3>
+                        <h3 className="text-lg font-bold text-gray-800">{data?.header?.judul || "MIS IT Al Uswah"}</h3>
                         <p className="text-gray-500 text-sm mt-1 max-w-sm">
                           {data?.footer?.teks_cta || "Mencetak generasi Qur'ani, Mandiri, dan Berprestasi."}
                         </p>
@@ -1459,7 +1439,7 @@ export default function App() {
                           <MapPin size={14} className="shrink-0 mt-0.5 md:mt-0" />
                           <span className="flex-1 leading-relaxed">{data?.footer?.alamat || data?.profil?.alamat}</span>
                         </div>
-                        <p className="shrink-0 w-full text-center md:text-right md:w-auto">© {new Date().getFullYear()} {data?.header?.judul || "AluswahGO"}.</p>
+                        <p className="shrink-0 w-full text-center md:text-right md:w-auto">© {new Date().getFullYear()} {data?.header?.judul || "MIS IT Al Uswah"}.</p>
                       </>
                     )}
                   </div>
@@ -1536,7 +1516,7 @@ export default function App() {
                     <AlertCircle className="w-8 h-8 text-red-500" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Keluar Aplikasi</h3>
-                  <p className="text-gray-500 mb-6">Apakah anda yakin ingin keluar dari AluswahGo?</p>
+                  <p className="text-gray-500 mb-6">Apakah Anda yakin ingin keluar dari MIS IT Al Uswah?</p>
                   
                   <div className="flex gap-3">
                     <button 

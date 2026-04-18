@@ -19,7 +19,7 @@ export default defineConfig(({mode}) => {
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
           name: 'MIS IT Al Uswah',
-          short_name: 'Al Uswah',
+          short_name: 'MIS IT Al Uswah',
           description: 'Portal Sekolah MIS IT Al Uswah',
           theme_color: '#0d9488',
           background_color: '#ffffff',
@@ -29,17 +29,18 @@ export default defineConfig(({mode}) => {
           id: '/',
           icons: [
             {
-              src: '/logo.png?v=2',
+              src: '/pwa-144x144.png',
+              sizes: '144x144',
+              type: 'image/png'
+            },
+            {
+              src: '/pwa-192x192.png',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/png',
+              purpose: 'any'
             },
             {
-              src: '/logo.png?v=2',
-              sizes: '512x512',
-              type: 'image/png'
-            },
-            {
-              src: '/logo.png?v=2',
+              src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
