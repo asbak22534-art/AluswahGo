@@ -32,6 +32,26 @@ export default function RadialView({ t, onBack }: RadialViewProps) {
 
   const SHEET_ID = '1xdSXU8QzMAKPTAXYEVGGJ1xt_78xUSc3wjFqAnos3bU';
 
+  // Menyergap tombol "back" hardware di HP ketika user sedang login
+  useEffect(() => {
+    if (student) {
+      // Dorong state baru sebagai jebakan history
+      window.history.pushState({ view: 'radial', radialState: 'loggedIn' }, '', '#radial-report');
+
+      const handlePopState = (e: PopStateEvent) => {
+        // Saat user menekan tombol back, munculkan notifikasi konfirmasi
+        setShowLogoutConfirm(true);
+        // Segera dorong kembali jebakan agar aplikasi tidak keluar
+        window.history.pushState({ view: 'radial', radialState: 'loggedIn' }, '', '#radial-report');
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => {
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [student]);
+
   useEffect(() => {
     const savedNisn = localStorage.getItem('savedNisn');
     if (savedNisn) {
@@ -221,6 +241,10 @@ export default function RadialView({ t, onBack }: RadialViewProps) {
                   setIsLoggingOut(false);
                   setShowLogoutConfirm(false);
                   handleLogout();
+                  // Hapus jebakan history agar state kembali normal ke halaman login Radial
+                  setTimeout(() => {
+                    window.history.back();
+                  }, 50);
                 }}
                 disabled={isLoggingOut}
                 className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
