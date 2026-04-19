@@ -122,11 +122,16 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
-    // Dengarkan event sebelum prompt instalasi muncul
+    // Ambil dari global (index.html) jika event terpicu sangat cepat sebelum React siap
+    if ((window as any).deferredPWAInstallPrompt) {
+      setDeferredPrompt((window as any).deferredPWAInstallPrompt);
+    }
+
+    // Dengarkan event sebelum prompt instalasi muncul (Jika telat tertangkap)
     const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      // Simpan event untuk dipicu saat tombol diklik
+      // TANPA e.preventDefault() agar icon Chrome Omnibox dan infobar bawaan tidak dibunuh
       setDeferredPrompt(e);
+      (window as any).deferredPWAInstallPrompt = e;
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

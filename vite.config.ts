@@ -16,7 +16,7 @@ export default defineConfig(({mode}) => {
         workbox: {
           importScripts: ["https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js"]
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg', 'pwa-144x144.png', 'pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
           name: 'MIS IT Al Uswah',
           short_name: 'MIS IT Al Uswah',

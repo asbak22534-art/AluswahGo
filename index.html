@@ -12,6 +12,14 @@
     <meta name="apple-mobile-web-app-title" content="MIS IT Al Uswah" />
     <meta name="application-name" content="MIS IT Al Uswah" />
     <title>MIS IT Al Uswah</title>
+    <script>
+      // Tangkap prompt instalasi sedini mungkin sebelum aplikasi React dimuat (Mengatasi Race-Condition)
+      window.deferredPWAInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // Sengaja TANPA e.preventDefault() agar icon Install di URL Bar Chrome Desktop tetap muncul secara natural
+        window.deferredPWAInstallPrompt = e;
+      });
+    </script>
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
