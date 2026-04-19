@@ -32,9 +32,13 @@ export default function ReloadPrompt() {
   const handleUpdate = () => {
     setIsUpdating(true);
     sessionStorage.setItem('pwa-just-updated', 'true');
-    // Beri jeda 1.5 detik agar pengguna bisa melihat notitikasinya sukses
+    // Beri jeda 1.5 detik agar pengguna melihat notifikasi sukses, lalu paksa reload
     setTimeout(() => {
-      updateServiceWorker(true);
+      updateServiceWorker(true).then(() => {
+        window.location.reload();
+      }).catch(() => {
+        window.location.reload();
+      });
     }, 1500);
   };
 
