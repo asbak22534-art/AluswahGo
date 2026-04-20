@@ -871,7 +871,7 @@ export default function App() {
               {deferredPrompt && (
                 <button 
                   onClick={handleInstallClick}
-                  className={`relative flex items-center justify-center p-2 rounded-full transition-colors active:scale-95 text-white shadow-md lg:hidden ${t.primaryBg}`}
+                  className={`relative flex items-center justify-center p-2 rounded-full transition-colors active:scale-95 text-white shadow-md ${t.primaryBg}`}
                   title="Instal Aplikasi"
                 >
                   <Download size={18} className="animate-bounce" />
