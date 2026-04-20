@@ -17,9 +17,7 @@
       // Tangkap prompt instalasi sedini mungkin sebelum aplikasi React dimuat
       window.deferredPWAInstallPrompt = null;
       window.addEventListener('beforeinstallprompt', (e) => {
-        // HARUS ADA e.preventDefault() untuk mencegah native install flow mengambil alih
-        // agar tombol kustom React kita (deferredPrompt.prompt()) bisa digunakan berulang kali.
-        e.preventDefault();
+        // Biarkan browser menampilkan prompt instalasinya secara natural (desktop address bar / mobile pop-up)
         window.deferredPWAInstallPrompt = e;
       });
     </script>

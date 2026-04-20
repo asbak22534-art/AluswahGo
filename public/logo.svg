@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Elemen luar bisa ditambahkan jika ingin, tidak ada background agar transparan -->
+  <path d="M256 32L32 200v236a44 44 0 0044 44h360a44 44 0 0044-44V200L256 32z" fill="#0d9488"/>
+  <path d="M256 80L80 212v216h352V212L256 80z" fill="#14b8a6"/>
+  <text x="256" y="320" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="160" font-weight="900" letter-spacing="-5">AU</text>
+</svg>

@@ -15,9 +15,7 @@ export default defineConfig(({mode}) => {
         injectRegister: 'script',
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          cleanupOutdatedCaches: true,
-          clientsClaim: true,
-          skipWaiting: true
+          cleanupOutdatedCaches: true
         },
         includeAssets: ['logo.png', 'apple-touch-icon-180x180.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
         manifest: {
