@@ -17,7 +17,7 @@ export default defineConfig(({mode}) => {
           importScripts: ["https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js"],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}']
         },
-        includeAssets: ['logo.png'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
         manifest: {
           name: 'MIS IT Al Uswah',
           short_name: 'MIS IT Al Uswah',
@@ -30,16 +30,22 @@ export default defineConfig(({mode}) => {
           id: '/',
           icons: [
             {
-              src: '/logo.png',
+              src: '/pwa-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any'
             },
             {
-              src: '/logo.png',
+              src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: '/maskable-icon-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
             }
           ]
         }
