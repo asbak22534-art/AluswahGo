@@ -12,7 +12,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         filename: 'OneSignalSDKWorker.js',
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
         injectRegister: 'script',
         workbox: {
           importScripts: ["https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js"],
