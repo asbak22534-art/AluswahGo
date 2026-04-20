@@ -17,8 +17,7 @@
       // Tangkap prompt instalasi sedini mungkin sebelum aplikasi React dimuat (Mengatasi Race-Condition)
       window.deferredPWAInstallPrompt = null;
       window.addEventListener('beforeinstallprompt', (e) => {
-        // Mencegah Chrome memunculkan infobar default (Memaksa agar prompt hanya muncul bila tombol ditekan)
-        e.preventDefault();
+        // Sengaja TANPA e.preventDefault() agar icon Install di URL Bar Chrome Desktop tetap muncul secara natural dan infobar HP muncul
         window.deferredPWAInstallPrompt = e;
       });
     </script>

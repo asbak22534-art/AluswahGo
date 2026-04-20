@@ -129,8 +129,7 @@ export default function App() {
 
     // Dengarkan event sebelum prompt instalasi muncul (Jika telat tertangkap)
     const handleBeforeInstallPrompt = (e: Event) => {
-      // Mencegah munculnya infobar mini default Android agar kita bisa menggunakan prompt custom sepenuhnya
-      e.preventDefault();
+      // TANPA e.preventDefault()
       setDeferredPrompt(e);
       (window as any).deferredPWAInstallPrompt = e;
     };

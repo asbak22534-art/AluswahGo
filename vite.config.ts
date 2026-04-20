@@ -13,6 +13,7 @@ export default defineConfig(({mode}) => {
       VitePWA({
         filename: 'OneSignalSDKWorker.js',
         registerType: 'prompt',
+        injectRegister: 'script',
         workbox: {
           importScripts: ["https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js"],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}']
