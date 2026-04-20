@@ -1,0 +1,5 @@
+*.png binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.svg text

@@ -135,10 +135,21 @@ export default function App() {
       (window as any).deferredPWAInstallPrompt = e;
     };
 
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      (window as any).deferredPWAInstallPrompt = null;
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setDeferredPrompt(null);
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
@@ -146,9 +157,8 @@ export default function App() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
+    setDeferredPrompt(null);
+    (window as any).deferredPWAInstallPrompt = null;
   };
 
   useEffect(() => {
