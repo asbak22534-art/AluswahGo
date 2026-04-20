@@ -129,7 +129,8 @@ export default function App() {
 
     // Dengarkan event sebelum prompt instalasi muncul (Jika telat tertangkap)
     const handleBeforeInstallPrompt = (e: Event) => {
-      // TANPA e.preventDefault() agar icon Chrome Omnibox dan infobar bawaan tidak dibunuh
+      // Mencegah munculnya infobar mini default Android agar kita bisa menggunakan prompt custom sepenuhnya
+      e.preventDefault();
       setDeferredPrompt(e);
       (window as any).deferredPWAInstallPrompt = e;
     };
