@@ -8,16 +8,18 @@
 
     <link rel="preconnect" href="https://script.google.com" />
     <link rel="preconnect" href="https://script.googleusercontent.com" />
-    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/logo.png" type="image/png" sizes="any">
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png">
     <meta name="apple-mobile-web-app-title" content="MIS IT Al Uswah" />
     <meta name="application-name" content="MIS IT Al Uswah" />
     <title>MIS IT Al Uswah</title>
     <script>
-      // Tangkap prompt instalasi sedini mungkin sebelum aplikasi React dimuat (Mengatasi Race-Condition)
+      // Tangkap prompt instalasi sedini mungkin sebelum aplikasi React dimuat
       window.deferredPWAInstallPrompt = null;
       window.addEventListener('beforeinstallprompt', (e) => {
-        // Sengaja TANPA e.preventDefault() agar icon Install di URL Bar Chrome Desktop tetap muncul secara natural dan infobar HP muncul
+        // HARUS ADA e.preventDefault() untuk mencegah native install flow mengambil alih
+        // agar tombol kustom React kita (deferredPrompt.prompt()) bisa digunakan berulang kali.
+        e.preventDefault();
         window.deferredPWAInstallPrompt = e;
       });
     </script>

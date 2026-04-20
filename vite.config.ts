@@ -12,13 +12,16 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         filename: 'OneSignalSDKWorker.js',
-        registerType: 'prompt',
+        registerType: 'autoUpdate',
         injectRegister: 'script',
         workbox: {
           importScripts: ["https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js"],
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}']
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
+        includeAssets: ['logo.png', 'apple-touch-icon-180x180.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png'],
         manifest: {
           name: 'MIS IT Al Uswah',
           short_name: 'MIS IT Al Uswah',
