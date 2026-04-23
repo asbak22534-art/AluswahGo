@@ -138,6 +138,7 @@ export function EkstraView({ t, onBack, title }: { t: ThemeConfig, onBack: () =>
                   t={t} 
                   className="aspect-square w-full bg-gray-50" 
                   objectFit="object-cover" 
+                  showGradient={false}
                 />
                 {/* Close button for mobile */}
                 <button onClick={() => setSelectedEkstra(null)} className="md:hidden absolute top-4 right-4 p-2 bg-black/30 hover:bg-black/50 text-white rounded-full backdrop-blur-md transition-colors z-20">

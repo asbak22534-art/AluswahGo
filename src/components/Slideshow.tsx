@@ -6,12 +6,14 @@ export const Slideshow = ({
   images, 
   t, 
   className = "h-48 sm:h-64",
-  objectFit = "object-cover"
+  objectFit = "object-cover",
+  showGradient = true
 }: { 
   images: string[], 
   t: ThemeConfig,
   className?: string,
-  objectFit?: string
+  objectFit?: string,
+  showGradient?: boolean
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -78,23 +80,42 @@ export const Slideshow = ({
           decoding="async"
         />
       </AnimatePresence>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-5 pointer-events-none z-10">
-        <div className="flex flex-col gap-3 w-full">
-          <div 
+      {showGradient && (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-5 pointer-events-none z-10">
+          <div className="flex flex-col gap-3 w-full">
+            <div 
+              ref={indicatorContainerRef}
+              className="flex gap-1.5 w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pointer-events-auto pb-1"
+            >
+              {images.map((_, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-300 shrink-0 ${idx === currentIndex ? `w-6 ${t.primaryBg}` : 'w-1.5 bg-white/50 hover:bg-white'}`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {!showGradient && images.length > 1 && (
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 pointer-events-none z-10 px-5">
+           <div 
             ref={indicatorContainerRef}
-            className="flex gap-1.5 w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pointer-events-auto pb-1"
+            className="flex gap-1.5 max-w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pointer-events-auto pb-1"
           >
             {images.map((_, idx) => (
               <button 
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`h-1.5 rounded-full transition-all duration-300 shrink-0 ${idx === currentIndex ? `w-6 ${t.primaryBg}` : 'w-1.5 bg-white/50 hover:bg-white'}`}
+                className={`h-1.5 rounded-full transition-all duration-300 shrink-0 shadow-sm ${idx === currentIndex ? `w-6 ${t.primaryBg}` : 'w-1.5 bg-black/20 hover:bg-black/40'}`}
                 aria-label={`Go to slide ${idx + 1}`}
               />
             ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
