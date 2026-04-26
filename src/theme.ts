@@ -10,6 +10,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-emerald-50 transition-colors duration-500',
+    accentBg: 'bg-amber-500 transition-colors duration-500',
+    accentText: 'text-amber-600 transition-colors duration-500',
+    accentLightBg: 'bg-amber-100 transition-colors duration-500',
   },
   cyan: {
     primaryBg: 'bg-cyan-600 transition-colors duration-500',
@@ -20,6 +23,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-cyan-50 transition-colors duration-500',
+    accentBg: 'bg-orange-500 transition-colors duration-500',
+    accentText: 'text-orange-600 transition-colors duration-500',
+    accentLightBg: 'bg-orange-100 transition-colors duration-500',
   },
   pastelPink: {
     primaryBg: 'bg-rose-500 transition-colors duration-500',
@@ -30,6 +36,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-rose-50 transition-colors duration-500',
+    accentBg: 'bg-fuchsia-500 transition-colors duration-500',
+    accentText: 'text-fuchsia-600 transition-colors duration-500',
+    accentLightBg: 'bg-fuchsia-100 transition-colors duration-500',
   },
   pastelMint: {
     primaryBg: 'bg-teal-500 transition-colors duration-500',
@@ -40,6 +49,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-teal-50 transition-colors duration-500',
+    accentBg: 'bg-rose-500 transition-colors duration-500',
+    accentText: 'text-rose-600 transition-colors duration-500',
+    accentLightBg: 'bg-rose-100 transition-colors duration-500',
   },
   indigo: {
     primaryBg: 'bg-indigo-600 transition-colors duration-500',
@@ -50,6 +62,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-indigo-50 transition-colors duration-500',
+    accentBg: 'bg-amber-500 transition-colors duration-500',
+    accentText: 'text-amber-600 transition-colors duration-500',
+    accentLightBg: 'bg-amber-100 transition-colors duration-500',
   },
   amber: {
     primaryBg: 'bg-amber-500 transition-colors duration-500',
@@ -60,6 +75,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-amber-50 transition-colors duration-500',
+    accentBg: 'bg-indigo-500 transition-colors duration-500',
+    accentText: 'text-indigo-600 transition-colors duration-500',
+    accentLightBg: 'bg-indigo-100 transition-colors duration-500',
   },
   violet: {
     primaryBg: 'bg-violet-600 transition-colors duration-500',
@@ -70,6 +88,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-violet-50 transition-colors duration-500',
+    accentBg: 'bg-emerald-500 transition-colors duration-500',
+    accentText: 'text-emerald-600 transition-colors duration-500',
+    accentLightBg: 'bg-emerald-100 transition-colors duration-500',
   },
   slate: {
     primaryBg: 'bg-slate-700 transition-colors duration-500',
@@ -80,6 +101,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-slate-100 transition-colors duration-500',
+    accentBg: 'bg-amber-500 transition-colors duration-500',
+    accentText: 'text-amber-600 transition-colors duration-500',
+    accentLightBg: 'bg-amber-100 transition-colors duration-500',
   },
   instagram: {
     primaryBg: 'bg-fuchsia-600 transition-colors duration-500',
@@ -90,6 +114,9 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-fuchsia-50 transition-colors duration-500',
+    accentBg: 'bg-cyan-500 transition-colors duration-500',
+    accentText: 'text-cyan-600 transition-colors duration-500',
+    accentLightBg: 'bg-cyan-100 transition-colors duration-500',
   },
   youtube: {
     primaryBg: 'bg-red-600 transition-colors duration-500',
@@ -100,5 +127,8 @@ export const themeConfig: Record<'emerald' | 'cyan' | 'pastelPink' | 'pastelMint
     badgeBg: 'bg-white/20 transition-colors duration-500',
     badgeText: 'text-white transition-colors duration-500',
     hoverPrimaryLight: 'hover:bg-red-50 transition-colors duration-500',
+    accentBg: 'bg-amber-500 transition-colors duration-500',
+    accentText: 'text-amber-600 transition-colors duration-500',
+    accentLightBg: 'bg-amber-100 transition-colors duration-500',
   }
 };

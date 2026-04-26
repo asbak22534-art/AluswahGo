@@ -64,19 +64,53 @@ export function SidebarItem({ icon, label, active = false, t, onClick }: { icon:
   );
 }
 
-export function ActionItem({ icon, label, t, index = 0, onClick, className = "" }: { icon: React.ReactNode, label: string, t: ThemeConfig, index?: number, onClick?: () => void, className?: string }) {
+export function ActionItem({ icon, label, t, index = 0, onClick, className = "", isHighlighted = false, badge = "" }: { icon: React.ReactNode, label: string, t: ThemeConfig, index?: number, onClick?: () => void, className?: string, isHighlighted?: boolean, badge?: string }) {
   return (
     <motion.button 
       onClick={onClick}
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
-      className={`flex flex-col items-center gap-1.5 group active:scale-95 transition-transform min-w-0 ${className}`}
+      animate={{ 
+        opacity: 1, 
+        y: 0,
+        scale: isHighlighted ? [1, 1.05, 1] : 1
+      }}
+      transition={{ 
+        opacity: { duration: 0.3, delay: index * 0.05 },
+        y: { duration: 0.3, delay: index * 0.05 },
+        scale: isHighlighted ? { 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        } : { duration: 0.3 }
+      }}
+      className={`flex flex-col items-center gap-1.5 group active:scale-95 transition-transform min-w-0 relative ${className}`}
     >
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow transition-all duration-300 ${t.primaryLightBg} ${t.primaryText} shrink-0`}>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm group-hover:shadow transition-all duration-300 shrink-0 relative overflow-hidden ${isHighlighted ? `${t.accentLightBg} ${t.accentText} ring-2 ring-offset-2 ring-amber-400` : `${t.primaryLightBg} ${t.primaryText}`}`}>
+        {isHighlighted && (
+          <motion.div 
+            className="absolute inset-0 bg-white opacity-20"
+            animate={{ 
+              x: ['-100%', '100%'],
+            }}
+            transition={{ 
+              duration: 1.5, 
+              repeat: Infinity, 
+              repeatDelay: 2,
+              ease: "linear" 
+            }}
+            style={{ skewX: -20 }}
+          />
+        )}
         {icon}
       </div>
-      <span className="text-[10px] md:text-xs font-medium text-gray-700 text-center leading-tight break-words whitespace-normal w-full px-1">{label}</span>
+      
+      {badge && (
+        <span className={`absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold text-white shadow-sm z-10 ${isHighlighted ? t.accentBg : t.primaryBg}`}>
+          {badge}
+        </span>
+      )}
+
+      <span className={`text-[10px] md:text-xs font-bold text-center leading-tight break-words whitespace-normal w-full px-1 ${isHighlighted ? t.accentText : 'text-gray-700'}`}>{label}</span>
     </motion.button>
   );
 }

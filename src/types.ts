@@ -18,7 +18,11 @@ export type ThemeConfig = {
   primaryLightBg: string;
   gradient: string;
   secondaryBg: string;
+  secondaryText?: string;
   badgeBg: string;
   badgeText: string;
   hoverPrimaryLight: string;
+  accentBg: string;
+  accentText: string;
+  accentLightBg: string;
 };

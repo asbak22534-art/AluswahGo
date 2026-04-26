@@ -1087,6 +1087,8 @@ export default function App() {
                             label={service.label} 
                             t={t} 
                             index={index} 
+                            isHighlighted={service.id === 'spmb'}
+                            badge={service.id === 'spmb' ? 'New' : ''}
                             onClick={() => handleNavigate(service.id as any)} 
                           />
                         );
