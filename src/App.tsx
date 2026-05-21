@@ -44,6 +44,7 @@ const RadialView = React.lazy(() => import('./components/RadialView'));
 const ReviewView = React.lazy(() => import('./views/ReviewView').then(m => ({ default: m.ReviewView })));
 const ReviewListView = React.lazy(() => import('./views/ReviewListView').then(m => ({ default: m.ReviewListView })));
 const GaleriView = React.lazy(() => import('./views/GaleriView').then(m => ({ default: m.GaleriView })));
+const KelulusanView = React.lazy(() => import('./views/KelulusanView').then(m => ({ default: m.KelulusanView })));
 
 const renderHighlightedText = (text: string, highlight: string, color: string) => {
   if (!highlight) return text;
@@ -112,7 +113,7 @@ export default function App() {
   const { data, isLoading, error, refreshData } = useData();
   const [showNotifs, setShowNotifs] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
-  const [currentView, setCurrentView] = useState<'home' | 'quran' | 'doa' | 'kalender' | 'spmb' | 'spmb-form' | 'kritik' | 'program' | 'ekstra' | 'sarpras' | 'news' | 'profil' | 'absensi' | 'affiliasi' | 'yaumiyah' | 'radial' | 'review' | 'review-list' | 'galeri' | 'chatbot' | 'notification-center'>(() => {
+  const [currentView, setCurrentView] = useState<'home' | 'quran' | 'doa' | 'kalender' | 'spmb' | 'spmb-form' | 'kritik' | 'program' | 'ekstra' | 'sarpras' | 'news' | 'profil' | 'absensi' | 'affiliasi' | 'yaumiyah' | 'radial' | 'review' | 'review-list' | 'galeri' | 'chatbot' | 'notification-center' | 'kelulusan'>(() => {
     return (localStorage.getItem('currentView') as any) || 'home';
   });
   const [showExitModal, setShowExitModal] = useState(false);
@@ -523,10 +524,60 @@ export default function App() {
       }
     };
     
+    const fetchKelulusanProfil = async () => {
+      try {
+        const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
+        const response = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
+        if (!response.ok) return;
+        const csvText = await response.text();
+        const rows = csvText.split('\n').map(row => {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          for (let i = 0; i < row.length; i++) {
+            if (row[i] === '"') {
+              inQuotes = !inQuotes;
+            } else if (row[i] === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += row[i];
+            }
+          }
+          result.push(current.trim());
+          return result;
+        });
+
+        if (rows.length > 1) {
+          const valName = rows[1][1]?.replace(/"/g, '').trim();
+          if (valName) {
+            localStorage.setItem('kelulusan_schoolName', valName);
+          }
+        }
+
+        if (rows.length > 3) {
+          const valVisi = rows[3][1]?.replace(/"/g, '').trim();
+          if (valVisi) {
+            localStorage.setItem('kelulusan_schoolVisi', valVisi);
+          }
+        }
+
+        if (rows.length > 19) {
+          const valLogo = rows[19][1]?.replace(/"/g, '').trim();
+          if (valLogo && valLogo.startsWith('http')) {
+            localStorage.setItem('kelulusan_logoUrl', valLogo);
+          }
+        }
+      } catch (error) {
+        console.error("Gagal memuat profil kelulusan di belakang layar", error);
+      }
+    };
+    
     fetchNews();
     fetchPrestasi();
     fetchOptionalConfig();
     fetchLayananDigital();
+    fetchKelulusanProfil();
   }, [retryTrigger]);
 
   useEffect(() => {
@@ -750,9 +801,10 @@ export default function App() {
     { id: 'affiliasi', label: "Affiliasi", icon: <Handshake size={20} /> },
     { id: 'review', label: "Review", icon: <Star size={20} /> },
     { id: 'galeri', label: "Galeri", icon: <ImageIcon size={20} /> },
+    { id: 'kelulusan', label: "Cek Kelulusan", sheetLabel: "Kelulusan Kelas 6", icon: <GraduationCap size={20} /> },
   ];
 
-  const orderedServices = layananDigitalOrder.length > 0 
+  let orderedServices = layananDigitalOrder.length > 0 
     ? layananDigitalOrder.map(name => {
         const service = allServices.find(s => s.label === name || s.sheetLabel === name);
         if (service) {
@@ -761,6 +813,11 @@ export default function App() {
         return null;
       }).filter(Boolean) as typeof allServices
     : allServices;
+
+  // Auto-append Cek Kelulusan if not present
+  if (!orderedServices.some(s => s.id === 'kelulusan')) {
+    orderedServices = [...orderedServices, { id: 'kelulusan', label: "Cek Kelulusan", icon: <GraduationCap size={20} /> }];
+  }
 
   const getServiceTitle = (id: string) => orderedServices.find(s => s.id === id)?.label;
 
@@ -1596,6 +1653,7 @@ export default function App() {
                   {currentView === 'review-list' && <ReviewListView t={t} data={data?.review || []} onBack={handleBack} />}
                   {currentView === 'galeri' && <GaleriView t={t} onBack={handleBack} />}
                   {currentView === 'chatbot' && <ChatbotView t={t} onBack={handleBack} />}
+                  {currentView === 'kelulusan' && <KelulusanView t={t} title={getServiceTitle('kelulusan')} onBack={handleBack} />}
                   {currentView === 'notification-center' && <NotificationCenterView t={t} onBack={handleBack} onSelectNotif={handleNotifClick} />}
                 </Suspense>
               </ErrorBoundary>

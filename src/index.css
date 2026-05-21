@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Scheherazade+New:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Scheherazade+New:wght@400;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@300..700&family=Poppins:wght@400;600;700;850&display=swap');
 
 html, body {
   overflow-x: hidden;
@@ -32,6 +32,9 @@ html, body {
 
 @theme {
   --font-arabic: 'LPMQ Isep Misbah', 'Scheherazade New', 'Amiri Quran', serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-serif-elegant: 'Playfair Display', serif;
+  --font-poppins: 'Poppins', sans-serif;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -58,4 +61,14 @@ html, body {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-150%) skewX(-15deg); }
+  45% { transform: translateX(150%) skewX(-15deg); }
+  100% { transform: translateX(150%) skewX(-15deg); }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s infinite ease-in-out;
 }
