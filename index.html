@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Cache control to prevent caching of index.html on mobile browsers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta name="description" content="Portal Sekolah Digital MIS IT Al Uswah. Akses informasi pendaftaran siswa baru, kabar berita, jadwal akademik, layanan Al Qur'an, dan prestasi siswa." />
     <meta name="theme-color" content="#0d9488" />
 
@@ -41,6 +45,17 @@
             OneSignal.Notifications.addEventListener('click', function(event) {
               const notificationData = event.notification;
               console.log("Notifikasi diklik:", notificationData);
+              
+              // Simpan default view ke home di localStorage agar tidak kembali ke halaman terakhir
+              try {
+                localStorage.setItem('currentView', 'home');
+              } catch (e) {
+                console.error(e);
+              }
+              
+              // Trigger event kustom ke React agar langsung diarahkan ke Beranda
+              window.dispatchEvent(new CustomEvent('notification-clicked'));
+              
               // Secara default Android akan membuka URL peluncur. Tapi jika aplikasi sedang running di background, kita paksa fokus.
               window.focus();
             });

@@ -266,6 +266,35 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentView, selectedNews, selectedPrestasi, selectedVideo, selectedNotif]);
 
+  // Solusi 3: Auto-reload browser ketika Service Worker baru aktif di mobile agar versi terbaru langsung berjalan
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+  }, []);
+
+  // Reset ke beranda ketika notifikasi diklik (baik dari background maupun fresh launch via OneSignal event)
+  useEffect(() => {
+    const handleNotificationClick = () => {
+      setCurrentView('home');
+      // Reset juga modal/selected states jika ada yang terbuka agar benar-benar berada di beranda utama
+      setSelectedNews(null);
+      setSelectedPrestasi(null);
+      setSelectedVideo(null);
+      setSelectedNotif(null);
+      setShowNotifs(false);
+      setShowExitModal(false);
+    };
+    window.addEventListener('notification-clicked', handleNotificationClick);
+    return () => window.removeEventListener('notification-clicked', handleNotificationClick);
+  }, []);
+
   useEffect(() => {
     const fetchNews = () => {
       const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
@@ -467,7 +496,8 @@ export default function App() {
     const fetchLayananDigital = async () => {
       try {
         const SHEET_ID = '1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s';
-        const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Layanan%20Digital`);
+        // Menambahkan parameter ?t=[timestamp] agar Google Sheets tidak dicache oleh browser mobile / CDP
+        const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Layanan%20Digital&t=${new Date().getTime()}`);
         if (!res.ok) return;
         const csv = await res.text();
         
