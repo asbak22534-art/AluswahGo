@@ -266,19 +266,6 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentView, selectedNews, selectedPrestasi, selectedVideo, selectedNotif]);
 
-  // Solusi 3: Auto-reload browser ketika Service Worker baru aktif di mobile agar versi terbaru langsung berjalan
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
-      });
-    }
-  }, []);
-
   // Reset ke beranda ketika notifikasi diklik (baik dari background maupun fresh launch via OneSignal event)
   useEffect(() => {
     const handleNotificationClick = () => {
@@ -458,7 +445,7 @@ export default function App() {
 
     const fetchOptionalConfig = async () => {
       try {
-        const response = await fetch('https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/gviz/tq?tqx=out:csv&sheet=Opsional');
+        const response = await fetch(`https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/gviz/tq?tqx=out:csv&sheet=Opsional&t=${new Date().getTime()}`);
         if (!response.ok) {
           setIsLoadingOptional(false);
           return;

@@ -18,6 +18,26 @@ export default function ReloadPrompt() {
       if (sessionStorage.getItem('pwa-just-updated')) {
         setTimeout(() => sessionStorage.removeItem('pwa-just-updated'), 5000);
       }
+      if (r) {
+        // Cek update saat aplikasi kembali fokus (misal user membuka HP / kembali dari lock screen)
+        const checkUpdateOnFocus = () => {
+          if (document.visibilityState === 'visible') {
+            r.update().catch(err => console.log('SW update error on focus check', err));
+          }
+        };
+        document.addEventListener('visibilitychange', checkUpdateOnFocus);
+
+        // Cek update secara berkala setiap 5 menit secara pasif di latar belakang
+        const intervalId = setInterval(() => {
+          r.update().catch(err => console.log('SW update error on interval check', err));
+        }, 5 * 60 * 1000);
+
+        // Bersihkan event listener & interval ketika window unload/tidak terpakai
+        window.addEventListener('beforeunload', () => {
+          document.removeEventListener('visibilitychange', checkUpdateOnFocus);
+          clearInterval(intervalId);
+        });
+      }
     },
     onRegisterError(error) {
       console.log('SW registration error', error);
