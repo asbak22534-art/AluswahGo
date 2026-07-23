@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, AlertCircle, Check, Copy, Search } from 'lucide-react';
+import { X, AlertCircle, Check, Copy, Search, MessageCircle, RefreshCw } from 'lucide-react';
 import { ThemeConfig } from '../types';
 import { databaseWilayah } from '../utils/wilayah';
+import { useData } from '../context/DataContext';
 
 const SPMB_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqelnYmwDkWJdUNoeduiVFza-Cx9cKb7A8Fq0vpv7sevGzCwdccQGqUdlddCQ_LquU_w/exec';
 
@@ -22,6 +23,7 @@ function calculateAgeOnJuly(birthDate: Date, year: number) {
 }
 
 export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void }) {
+  const { data } = useData();
   const [activeTab, setActiveTab] = useState<'daftar' | 'cek'>('daftar');
   const [toast, setToast] = useState<{ message: string, type: 'warning' | 'error' | 'success' } | null>(null);
   
@@ -51,6 +53,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('Mengirim...');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'warning', content: any } | null>(null);
+  const [correctionToken, setCorrectionToken] = useState<string | null>(null);
   const [phoneWarning, setPhoneWarning] = useState(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const phoneWarningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -84,6 +87,30 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
   const [isChecking, setIsChecking] = useState(false);
   const [checkingText, setCheckingText] = useState('Memeriksa...');
   const [isCopied, setIsCopied] = useState(false);
+  const [localHistory, setLocalHistory] = useState<any[]>([]);
+  const [duplicateMatch, setDuplicateMatch] = useState<{ name: string, dob: string } | null>(null);
+  const [waCorrectionTemplate, setWaCorrectionTemplate] = useState<string>('');
+  const [waContactTemplate, setWaContactTemplate] = useState<string>('');
+
+  useEffect(() => {
+    const history = JSON.parse(localStorage.getItem('ppdb_history') || '[]');
+    setLocalHistory(history);
+  }, []);
+
+  // Fetch WhatsApp templates
+  useEffect(() => {
+    if (SPMB_SCRIPT_URL.startsWith('https://script.google.com')) {
+      fetch(`${SPMB_SCRIPT_URL}?action=getWaTemplate`)
+        .then(res => res.json())
+        .then(result => {
+          if (result.status === 'success') {
+            if (result.correction) setWaCorrectionTemplate(result.correction);
+            if (result.contact) setWaContactTemplate(result.contact);
+          }
+        })
+        .catch(err => console.error("Gagal mengambil template WA dari sheet:", err));
+    }
+  }, []);
 
   // Pre-warming Google Apps Script
   useEffect(() => {
@@ -192,6 +219,17 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
 
     const birthDate = new Date(formData.tgl_lahir);
     const currentYear = new Date().getFullYear();
+    const minYear = currentYear - 15;
+
+    if (birthDate.getFullYear() < minYear) {
+      setAgeInfo({
+        text: <><span className="text-red-600 font-bold">⚠️ Tanggal lahir tidak valid. Tahun minimal {minYear}.</span></>,
+        isUnder3: false
+      });
+      setTapelOptions([]);
+      return;
+    }
+
     const ageThisJuly = calculateAgeOnJuly(birthDate, currentYear);
     
     const isUnder3 = ageThisJuly < 3;
@@ -235,11 +273,20 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
     }
     
     setTapelOptions(newOptions);
-    if (!formData.tapel || !newOptions.find(o => o.value === formData.tapel)) {
-      setFormData(prev => ({ ...prev, tapel: newOptions[0].value }));
-      verifyTapelStatus(newOptions[0].value);
+    if (newOptions.length > 0) {
+      if (correctionToken) {
+        // Dalam mode koreksi, pertahankan pilihan tahun pelajaran jika masih ada di daftar opsi
+        if (!formData.tapel || !newOptions.find(o => o.value === formData.tapel)) {
+          setFormData(prev => ({ ...prev, tapel: newOptions[0].value }));
+          verifyTapelStatus(newOptions[0].value);
+        }
+      } else {
+        // Mode pendaftaran biasa, selalu default-kan ke opsi pertama (rekomendasi usia 6 tahun yang ada centang ✅)
+        setFormData(prev => ({ ...prev, tapel: newOptions[0].value }));
+        verifyTapelStatus(newOptions[0].value);
+      }
     }
-  }, [formData.tgl_lahir]);
+  }, [formData.tgl_lahir, correctionToken]);
 
   const verifyTapelStatus = async (selectedTapel: string) => {
     if (!selectedTapel) return;
@@ -274,6 +321,147 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
     const history = JSON.parse(localStorage.getItem('ppdb_history') || '[]');
     history.push(data);
     localStorage.setItem('ppdb_history', JSON.stringify(history));
+    setLocalHistory(history);
+  };
+
+  const handleDeleteHistoryItem = (idx: number) => {
+    const history = JSON.parse(localStorage.getItem('ppdb_history') || '[]');
+    history.splice(idx, 1);
+    localStorage.setItem('ppdb_history', JSON.stringify(history));
+    setLocalHistory(history);
+    showToast('Riwayat berhasil dihapus', 'success');
+  };
+
+  const formatWaMessage = (template: string, studentName: string, token: string) => {
+    if (!template) {
+      return `Halo Admin MIS IT Al Uswah Pasirian, mohon bantuan untuk menghapus data pendaftaran ananda *${studentName}* dengan Token *${token}* karena ada kesalahan input, agar kami dapat melakukan pendaftaran ulang dengan data yang benar. Terima kasih.`;
+    }
+    
+    let formatted = template;
+    formatted = formatted
+      .replace(/\[nama_lengkap\]/gi, studentName)
+      .replace(/\{nama_lengkap\}/gi, studentName)
+      .replace(/\[nama\]/gi, studentName)
+      .replace(/\{nama\}/gi, studentName)
+      .replace(/\[studentname\]/gi, studentName)
+      .replace(/\{studentname\}/gi, studentName);
+      
+    formatted = formatted
+      .replace(/\[token\]/gi, token)
+      .replace(/\{token\}/gi, token);
+      
+    return formatted;
+  };
+
+  const formatWaContactMessage = (template: string, tapel: string) => {
+    if (!template) {
+      return `Assalamu'alaikum Admin, saya ingin menanyakan ketersediaan kuota SPMB untuk Tahun Pelajaran ${tapel}, apakah masih bisa mendaftar?`;
+    }
+    
+    let formatted = template;
+    formatted = formatted
+      .replace(/\[tahun\]/gi, tapel)
+      .replace(/\{tahun\}/gi, tapel)
+      .replace(/\[tapel\]/gi, tapel)
+      .replace(/\{tapel\}/gi, tapel);
+      
+    return formatted;
+  };
+
+  const handleWhatsAppCorrection = (studentName: string, token: string) => {
+    const adminNumber = data?.profil?.wa || data?.footer?.no_wa || '6282333427597';
+    const message = formatWaMessage(waCorrectionTemplate, studentName, token);
+    window.open(`https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleWhatsAppDeleteRequest = (studentName: string, token: string) => {
+    const adminNumber = data?.profil?.wa || data?.footer?.no_wa || '6282333427597';
+    const message = formatWaMessage(waCorrectionTemplate, studentName, token);
+    window.open(`https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleWhatsAppContact = (tapel: string) => {
+    const adminNumber = data?.profil?.wa || data?.footer?.no_wa || '6282333427597';
+    const message = formatWaContactMessage(waContactTemplate, tapel);
+    window.open(`https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleCancelCorrection = () => {
+    setCorrectionToken(null);
+    setFormData({
+      nama_lengkap: '',
+      nama_panggilan: '',
+      jenis_kelamin: '',
+      tgl_lahir: '',
+      tapel: '',
+      asal_sekolah: '',
+      nama_ayah: '',
+      pekerjaan_ayah: '',
+      nama_ibu: '',
+      pekerjaan_ibu: '',
+      alamat_rt: '',
+      alamat_rw: '',
+      alamat_desa: '',
+      alamat_kecamatan: '',
+      alamat_kabupaten: '',
+      nomor_hp: '',
+      sumber_info_check: ''
+    });
+    showToast("Mode koreksi data dibatalkan.", "warning");
+  };
+
+  const handlePrefillForReRegistration = (data: any) => {
+    let cleanHp = data.nomor_hp || '';
+    if (cleanHp.startsWith('62')) {
+      cleanHp = cleanHp.substring(2);
+    } else if (cleanHp.startsWith('0')) {
+      cleanHp = cleanHp.substring(1);
+    }
+
+    setFormData({
+      nama_lengkap: data.nama_lengkap || data.nama || '',
+      nama_panggilan: data.nama_panggilan || '',
+      jenis_kelamin: data.jenis_kelamin || '',
+      tgl_lahir: data.tgl_lahir || data.tanggal_lahir || '',
+      tapel: data.tapel || data.tahun_pelajaran || '',
+      asal_sekolah: data.asal_sekolah || '',
+      nama_ayah: data.nama_ayah || '',
+      pekerjaan_ayah: data.pekerjaan_ayah || '',
+      nama_ibu: data.nama_ibu || '',
+      pekerjaan_ibu: data.pekerjaan_ibu || '',
+      alamat_rt: data.alamat_rt || '',
+      alamat_rw: data.alamat_rw || '',
+      alamat_desa: data.alamat_desa || '',
+      alamat_kecamatan: data.alamat_kecamatan || '',
+      alamat_kabupaten: data.alamat_kabupaten || '',
+      nomor_hp: cleanHp,
+      sumber_info_check: data.sumber_info_check || ''
+    });
+    
+    setCorrectionToken(data.token || cekToken || '');
+    setCekResult(null);
+    setActiveTab('daftar');
+    
+    showToast("Mode Koreksi Aktif: Silakan edit formulir lalu kirim kembali untuk memperbarui data.", "success");
+  };
+
+  const handleBypassDuplicate = async () => {
+    setDuplicateMatch(null);
+    setStatusMsg(null);
+    await executeSubmit();
+  };
+
+  const handleDeleteDuplicateAndRetry = async () => {
+    if (duplicateMatch) {
+      const history = JSON.parse(localStorage.getItem('ppdb_history') || '[]');
+      const cleanName = duplicateMatch.name.toLowerCase().trim();
+      const updatedHistory = history.filter((item: any) => !(item.name.toLowerCase().trim() === cleanName && item.dob === duplicateMatch.dob));
+      localStorage.setItem('ppdb_history', JSON.stringify(updatedHistory));
+      setLocalHistory(updatedHistory);
+      setDuplicateMatch(null);
+      setStatusMsg(null);
+      await executeSubmit();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -295,7 +483,18 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
       return;
     }
 
-    if (isDuplicate(formData.nama_lengkap, formData.tgl_lahir)) {
+    if (formData.tgl_lahir) {
+      const birthDate = new Date(formData.tgl_lahir);
+      const currentYear = new Date().getFullYear();
+      const minYear = currentYear - 15;
+      if (birthDate.getFullYear() < minYear) {
+        showToast(`Tanggal lahir tidak valid. Tahun minimal adalah ${minYear}.`, 'warning');
+        return;
+      }
+    }
+
+    if (!correctionToken && isDuplicate(formData.nama_lengkap, formData.tgl_lahir)) {
+      setDuplicateMatch({ name: formData.nama_lengkap, dob: formData.tgl_lahir });
       setStatusMsg({
         type: 'warning',
         content: `Siswa atas nama <strong>${formData.nama_lengkap}</strong> dengan tanggal lahir tersebut sudah terdaftar di perangkat ini.`
@@ -303,6 +502,10 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
       return;
     }
 
+    await executeSubmit();
+  };
+
+  const executeSubmit = async () => {
     setIsLoading(true);
     setStatusMsg(null);
 
@@ -316,7 +519,13 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
     submitData.append('timestamp', new Date().toLocaleString('id-ID'));
     submitData.append('spreadsheetId', '10hdmoeCriiFoyccbf3Icn_QwfiYCUArMDRKcULehSqE');
     submitData.append('sheetName', 'DB_SPMB');
-    submitData.append('action', 'register');
+    
+    if (correctionToken) {
+      submitData.append('action', 'updateSPMB');
+      submitData.append('token', correctionToken);
+    } else {
+      submitData.append('action', 'register');
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -324,10 +533,11 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
     try {
       if (!SPMB_SCRIPT_URL.startsWith('https://script.google.com')) {
         await new Promise(r => setTimeout(r, 1500));
-        const demoToken = "DEMO-" + Math.floor(Math.random() * 10000);
-        const data = { name: formData.nama_lengkap, dob: formData.tgl_lahir, token: demoToken, tapel: formData.tapel, school: formData.asal_sekolah };
+        const demoToken = correctionToken || ("DEMO-" + Math.floor(Math.random() * 10000));
+        const data = { name: formData.nama_lengkap, dob: formData.tgl_lahir, token: demoToken, tapel: formData.tapel, school: formData.asal_sekolah, isCorrection: !!correctionToken };
         saveToHistory(data);
         setStatusMsg({ type: 'success', content: data });
+        setCorrectionToken(null);
       } else {
         const response = await fetch(SPMB_SCRIPT_URL, {
           method: 'POST',
@@ -338,9 +548,10 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
         clearTimeout(timeoutId);
         const result = await response.json();
         if (result.status === 'success') {
-          const data = { name: formData.nama_lengkap, dob: formData.tgl_lahir, token: result.token, tapel: formData.tapel, school: formData.asal_sekolah };
+          const data = { name: formData.nama_lengkap, dob: formData.tgl_lahir, token: result.token || correctionToken, tapel: formData.tapel, school: formData.asal_sekolah, isCorrection: !!correctionToken };
           saveToHistory(data);
           setStatusMsg({ type: 'success', content: data });
+          setCorrectionToken(null);
         } else if (result.status === 'duplicate') {
           setStatusMsg({
             type: 'warning',
@@ -366,7 +577,10 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
       setCekResult({ type: 'error', message: 'Silakan masukkan token terlebih dahulu.' });
       return;
     }
+    await handleCheckTokenWithToken(cekToken);
+  };
 
+  const handleCheckTokenWithToken = async (tokenToCheck: string) => {
     setIsChecking(true);
     setCekResult(null);
 
@@ -375,7 +589,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
 
     try {
       if (SPMB_SCRIPT_URL.startsWith('https://script.google.com')) {
-        const response = await fetch(`${SPMB_SCRIPT_URL}?action=check&token=${encodeURIComponent(cekToken.trim().toUpperCase())}`, {
+        const response = await fetch(`${SPMB_SCRIPT_URL}?action=check&token=${encodeURIComponent(tokenToCheck.trim().toUpperCase())}`, {
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -383,11 +597,11 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
         if (result.status === 'found') {
           setCekResult({ type: 'success', data: result });
         } else {
-          setCekResult({ type: 'error', message: `Data dengan token ${cekToken} tidak ada di database kami.` });
+          setCekResult({ type: 'error', message: `Data dengan token ${tokenToCheck} tidak ada di database kami.` });
         }
       } else {
         await new Promise(r => setTimeout(r, 1000));
-        setCekResult({ type: 'error', message: `Data dengan token ${cekToken} tidak ada di database kami.` });
+        setCekResult({ type: 'error', message: `Data dengan token ${tokenToCheck} tidak ada di database kami.` });
       }
     } catch (error: any) {
       if (error.name === 'AbortError') {
@@ -467,7 +681,28 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
             {activeTab === 'daftar' && (
               <div className="transition-opacity duration-300">
                 {!statusMsg ? (
-                  <form onSubmit={handleSubmit} className="space-y-5">
+                  <>
+                    {correctionToken && (
+                      <div className="mb-6 p-4 bg-amber-50 border-2 border-dashed border-amber-300 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-inner">
+                        <div className="flex items-start gap-2.5">
+                          <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="text-xs font-bold text-amber-800">Mode Koreksi Aktif</h4>
+                            <p className="text-[10px] text-amber-700 leading-relaxed mt-0.5">
+                              Anda sedang memperbarui data pendaftaran dengan Token <strong className="font-mono">{correctionToken}</strong>. Kirim formulir ini untuk menimpa data sebelumnya.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleCancelCorrection}
+                          className="shrink-0 text-[10px] font-bold py-1.5 px-3 bg-white border border-amber-300 text-amber-800 rounded-lg hover:bg-amber-100 transition-all active:scale-95 whitespace-nowrap"
+                        >
+                          Batal Koreksi
+                        </button>
+                      </div>
+                    )}
+                    <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap Calon Siswa</label>
                       <input type="text" name="nama_lengkap" value={formData.nama_lengkap} onChange={handleInputChange} onBlur={handleBlur} required placeholder="Sesuai Akta Kelahiran" className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:bg-white focus:ring-2 focus:ring-opacity-50 transition-all outline-none ${t.primaryBg.replace('bg-', 'focus:ring-').replace('600', '500')} ${t.primaryBg.replace('bg-', 'focus:border-').replace('600', '500')}`} />
@@ -486,7 +721,7 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">Tanggal Lahir</label>
-                      <input type="date" name="tgl_lahir" value={formData.tgl_lahir} onChange={handleInputChange} required max={new Date().toISOString().split('T')[0]} className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:bg-white focus:ring-2 focus:ring-opacity-50 transition-all outline-none ${t.primaryBg.replace('bg-', 'focus:ring-').replace('600', '500')} ${t.primaryBg.replace('bg-', 'focus:border-').replace('600', '500')}`} />
+                      <input type="date" name="tgl_lahir" value={formData.tgl_lahir} onChange={handleInputChange} required min={`${new Date().getFullYear() - 15}-01-01`} max={new Date().toISOString().split('T')[0]} className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:bg-white focus:ring-2 focus:ring-opacity-50 transition-all outline-none ${t.primaryBg.replace('bg-', 'focus:ring-').replace('600', '500')} ${t.primaryBg.replace('bg-', 'focus:border-').replace('600', '500')}`} />
                       {ageInfo && (
                         <p className="mt-2 text-xs">
                           <span className={`inline-flex flex-col px-3 py-2 rounded-lg font-medium ${t.primaryLightBg} ${t.primaryText}`}>
@@ -598,29 +833,57 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
                       {isLoading ? (
                         <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> {loadingText}</>
                       ) : (
-                        <>Daftar Sekarang <Check size={20} /></>
+                        <>{correctionToken ? 'Simpan Pembaruan Data' : 'Daftar Sekarang'} <Check size={20} /></>
                       )}
                     </button>
                   </form>
+                </>
                 ) : (
                   <div className="space-y-4">
                     {statusMsg.type === 'success' && (
-                      <div className={`bg-gradient-to-r ${t.primaryLightBg} border-2 border-current rounded-2xl p-6 mb-4`}>
-                        <div className="text-center">
-                          <h3 className={`text-lg font-bold ${t.primaryText} mb-1`}>✅ Registrasi Berhasil!</h3>
-                          <p className={`text-sm mb-4 leading-relaxed ${t.primaryText}`}>
-                            Ananda <strong>{statusMsg.content.name}</strong> terdaftar sebagai calon siswa inden <strong>MIS IT Al Uswah Pasirian</strong> pada Tahun Pelajaran <strong>{statusMsg.content.tapel}</strong>
-                          </p>
-                          <p className={`text-sm mb-3 ${t.primaryText}`}>Token pendaftaran Anda:</p>
-                          <div onClick={() => copyToClipboard(statusMsg.content.token)} className="bg-white border-2 border-current rounded-xl p-4 mb-3 relative cursor-pointer hover:opacity-80 active:scale-95 transition-all select-none group">
-                            <p className={`text-2xl sm:text-3xl font-bold text-center tracking-wider ${t.primaryText}`} title="Klik untuk menyalin token">
-                              {isCopied ? "Berhasil disalin ✅" : statusMsg.content.token}
+                      <div className="space-y-4">
+                        <div className={`bg-gradient-to-r ${t.primaryLightBg} border-2 border-current rounded-2xl p-6`}>
+                          <div className="text-center">
+                            <h3 className={`text-lg font-bold ${t.primaryText} mb-1`}>
+                              {statusMsg.content.isCorrection ? '✅ Koreksi Berhasil!' : '✅ Registrasi Berhasil!'}
+                            </h3>
+                            {statusMsg.content.isCorrection ? (
+                              <p className={`text-sm mb-4 leading-relaxed ${t.primaryText}`}>
+                                Data pendaftaran Ananda <strong>{statusMsg.content.name}</strong> berhasil diperbarui pada database <strong>MIS IT Al Uswah Pasirian</strong>.
+                              </p>
+                            ) : (
+                              <p className={`text-sm mb-4 leading-relaxed ${t.primaryText}`}>
+                                Ananda <strong>{statusMsg.content.name}</strong> terdaftar sebagai calon siswa inden <strong>MIS IT Al Uswah Pasirian</strong> pada Tahun Pelajaran <strong>{statusMsg.content.tapel}</strong>
+                              </p>
+                            )}
+                            <p className={`text-sm mb-3 ${t.primaryText}`}>Token pendaftaran Anda:</p>
+                            <div onClick={() => copyToClipboard(statusMsg.content.token)} className="bg-white border-2 border-current rounded-xl p-4 mb-3 relative cursor-pointer hover:opacity-80 active:scale-95 transition-all select-none group">
+                              <p className={`text-2xl sm:text-3xl font-bold text-center tracking-wider ${t.primaryText}`} title="Klik untuk menyalin token">
+                                {isCopied ? "Berhasil disalin ✅" : statusMsg.content.token}
+                              </p>
+                              {!isCopied && <p className="text-xs text-center text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Klik untuk menyalin</p>}
+                            </div>
+                            <p className={`text-xs flex items-center justify-center gap-1 ${t.primaryText}`}>
+                              <Check size={14} /> Simpan token ini sebagai bukti pendaftaran.
                             </p>
-                            {!isCopied && <p className="text-xs text-center text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Klik untuk menyalin</p>}
                           </div>
-                          <p className={`text-xs flex items-center justify-center gap-1 ${t.primaryText}`}>
-                            <Check size={14} /> Simpan token ini sebagai bukti pendaftaran.
+                        </div>
+
+                        {/* WhatsApp Correction Card */}
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
+                          <h4 className="text-xs font-bold text-amber-800 flex items-center gap-1.5 mb-1">
+                            <AlertCircle size={14} /> Ada Kesalahan Input Data?
+                          </h4>
+                          <p className="text-[11px] text-amber-700 leading-relaxed mb-3">
+                            Jika Anda menyadari adanya kesalahan pengisian data pendaftaran, silakan hubungi admin kami untuk mengajukan penghapusan data pendaftaran sebelumnya agar Anda dapat mendaftar ulang dengan data yang benar.
                           </p>
+                          <button
+                            type="button"
+                            onClick={() => handleWhatsAppDeleteRequest(statusMsg.content.name, statusMsg.content.token)}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-all active:scale-95"
+                          >
+                            <MessageCircle size={14} /> Minta Koreksi Data
+                          </button>
                         </div>
                       </div>
                     )}
@@ -636,14 +899,51 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
                       </div>
                     )}
                     {statusMsg.type === 'warning' && (
-                      <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4">
-                        <div className="flex items-center gap-3">
-                          <AlertCircle className="text-amber-500" size={32} />
-                          <div>
-                            <h3 className="text-amber-800 font-semibold">Perhatian</h3>
-                            <p className="text-amber-600 text-sm" dangerouslySetInnerHTML={{ __html: statusMsg.content }}></p>
+                      <div className="space-y-4 text-left">
+                        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={24} />
+                            <div>
+                              <h3 className="text-amber-800 font-bold text-sm">Perhatian</h3>
+                              <p className="text-amber-600 text-xs mt-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: statusMsg.content }}></p>
+                            </div>
                           </div>
                         </div>
+
+                        {duplicateMatch && (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                              <button 
+                                type="button"
+                                onClick={handleBypassDuplicate}
+                                className={`flex-1 py-3 px-4 ${t.primaryBg} text-white font-bold rounded-xl text-xs hover:opacity-95 shadow transition-all active:scale-95 flex items-center justify-center gap-1`}
+                              >
+                                Tetap Daftar Baru
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={handleDeleteDuplicateAndRetry}
+                                className="flex-1 py-3 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl border border-red-200 text-xs transition-all active:scale-95 flex items-center justify-center gap-1"
+                              >
+                                Hapus Riwayat & Kirim
+                              </button>
+                            </div>
+
+                             {/* WhatsApp correction on duplicate card */}
+                             <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                               <p className="text-[10px] text-gray-500 mb-2 leading-normal">
+                                 Jika Anda bermaksud melakukan perbaikan data yang salah, Anda juga bisa mengajukan permintaan kepada admin untuk menghapus pendaftaran yang lama di database agar dapat mendaftar ulang.
+                               </p>
+                               <button 
+                                 type="button"
+                                 onClick={() => handleWhatsAppDeleteRequest(duplicateMatch.name, "Pendaftaran Ganda")}
+                                 className="w-full py-2 px-3 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-lg border border-gray-300 text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                               >
+                                 <MessageCircle size={14} className="text-emerald-600" /> Minta Koreksi Data
+                               </button>
+                             </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     <button onClick={() => { setStatusMsg(null); setFormData(prev => ({ ...prev, nama_lengkap: '', tgl_lahir: '' })); }} className="w-full py-3 bg-gray-100 text-gray-600 font-bold rounded-xl border border-gray-200 hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 active:scale-95">
@@ -655,13 +955,15 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
             )}
 
             {activeTab === 'cek' && (
-              <div className="transition-opacity duration-300 text-center space-y-6 py-3">
-                <div className={`w-16 h-16 ${t.primaryLightBg} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                  <Search className={`w-8 h-8 ${t.primaryText}`} />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-gray-800">Cek Status Pendaftaran</h3>
-                  <p className="text-gray-500 text-sm">Masukkan Token yang Anda dapatkan saat mendaftar</p>
+              <div className="transition-opacity duration-300 space-y-6 py-3">
+                <div className="text-center">
+                  <div className={`w-16 h-16 ${t.primaryLightBg} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                    <Search className={`w-8 h-8 ${t.primaryText}`} />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-gray-800">Cek Status Pendaftaran</h3>
+                    <p className="text-gray-500 text-sm">Masukkan Token yang Anda dapatkan saat mendaftar</p>
+                  </div>
                 </div>
                 <div className="max-w-xs mx-auto space-y-4">
                   <input type="text" value={cekToken} onChange={e => setCekToken(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCheckToken()} placeholder="Contoh: REG25-AZ-9X2A" className={`w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-center text-gray-800 font-bold tracking-widest placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-opacity-50 transition-all outline-none uppercase ${t.primaryBg.replace('bg-', 'focus:border-').replace('600', '500')}`} />
@@ -669,6 +971,54 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
                     {isChecking ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div> {checkingText}</> : 'Cek Sekarang'}
                   </button>
                 </div>
+
+                {/* Local Registration History List */}
+                {localHistory.length > 0 && (
+                  <div className="mt-8 pt-6 border-t border-gray-100 text-left max-w-sm mx-auto">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Riwayat Pendaftaran di Perangkat Ini</h4>
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                      {localHistory.map((item, idx) => (
+                        <div key={idx} className="bg-gray-50 border border-gray-150 p-3 rounded-xl flex items-center justify-between gap-3 shadow-sm hover:bg-gray-100/70 transition-all">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-gray-800 text-sm truncate">{item.name}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-500 flex-wrap">
+                              <span>TP {item.tapel}</span>
+                              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                              <span 
+                                onClick={() => copyToClipboard(item.token)}
+                                title="Klik untuk menyalin token"
+                                className="font-mono bg-white border px-1.5 py-0.5 rounded text-gray-600 truncate cursor-pointer hover:bg-gray-50 select-all"
+                              >
+                                {item.token}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setCekToken(item.token);
+                                handleCheckTokenWithToken(item.token);
+                              }}
+                              title="Cek Status"
+                              className={`p-2 bg-white hover:${t.primaryLightBg} text-gray-600 hover:${t.primaryText} rounded-lg border border-gray-200 transition-colors active:scale-95`}
+                            >
+                              <Search size={14} />
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => handleDeleteHistoryItem(idx)}
+                              title="Hapus dari perangkat ini"
+                              className="p-2 bg-white hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg border border-gray-200 transition-colors active:scale-95"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -699,9 +1049,13 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
                   <p className="font-medium text-gray-700">Untuk informasi lebih lanjut, silakan hubungi narahubung kami.</p>
                 </div>
               </div>
-              <a href={`https://wa.me/6282333427597?text=${encodeURIComponent(`Assalamu'alaikum Admin, saya ingin menanyakan ketersediaan kuota SPMB untuk Tahun Pelajaran ${closedTapel}, apakah masih bisa mendaftar?`)}`} target="_blank" rel="noreferrer" className={`block w-full py-3 ${t.primaryBg} text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 mb-3 shadow-lg active:scale-95`}>
+              <button
+                type="button"
+                onClick={() => handleWhatsAppContact(closedTapel)}
+                className={`block w-full py-3 ${t.primaryBg} text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 mb-3 shadow-lg active:scale-95`}
+              >
                 Hubungi Narahubung
-              </a>
+              </button>
               <button onClick={() => { setClosedTapel(null); setFormData(prev => ({ ...prev, tapel: '' })); }} className="text-gray-400 text-sm hover:text-gray-600 font-medium p-2">
                 Pilih Tahun Lain
               </button>
@@ -722,18 +1076,45 @@ export function SPMBModal({ t, onClose }: { t: ThemeConfig, onClose: () => void 
                     <Check className={t.primaryText} size={32} />
                   </div>
                   <h3 className="text-xl font-bold text-gray-800 mb-2">Terdaftar!</h3>
-                  <p className="text-gray-600 mb-4">Data pendaftaran Ananda <strong className={t.primaryText}>{cekResult.data.nama}</strong> berhasil ditemukan untuk Tahun Pelajaran <strong>{cekResult.data.tapel || '(Tahun tidak terekam)'}</strong>.</p>
+                  <p className="text-gray-600 mb-4">Data pendaftaran Ananda <strong className={t.primaryText}>{cekResult.data.nama_lengkap || cekResult.data.nama}</strong> berhasil ditemukan untuk Tahun Pelajaran <strong>{cekResult.data.tapel || '(Tahun tidak terekam)'}</strong>.</p>
                   <p className="text-sm text-gray-500 mb-2">Silakan simpan Token Anda:</p>
                   
                   <div 
-                    onClick={() => copyToClipboard(cekResult.data.token)} 
+                    onClick={() => copyToClipboard(cekResult.data.token || cekToken)} 
                     title="Klik untuk menyalin token"
                     className="select-none bg-white border-2 border-dashed border-blue-500 px-6 py-3 rounded-xl font-mono text-2xl text-gray-800 cursor-pointer inline-block font-bold transition-all shadow-sm hover:bg-gray-50"
                   >
-                    {isCopied ? "Berhasil disalin ✅" : `${cekResult.data.token} 📋`}
+                    {isCopied ? "Berhasil disalin ✅" : `${cekResult.data.token || cekToken} 📋`}
                   </div>
                   
-                  <p className="text-xs text-gray-400 mt-2 mb-6">(Klik kotak di atas untuk menyalin)</p>
+                  <p className="text-xs text-gray-400 mt-2 mb-4">(Klik kotak di atas untuk menyalin)</p>
+
+                  {/* Options 2 & 3: WhatsApp Correction & Prefill Re-registration */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left mb-6">
+                    <h4 className="text-xs font-bold text-amber-800 flex items-center gap-1.5 mb-1">
+                      <AlertCircle size={14} className="shrink-0" /> Ada Kesalahan Input Data?
+                    </h4>
+                    <p className="text-[10px] text-amber-700 leading-relaxed mb-3">
+                      Jika Anda ingin memperbaiki kesalahan pengisian data sebelumnya, Anda dapat memuat data ini ke form untuk mengeditnya (kiriman baru akan menimpa data lama di database), atau mengajukan permintaan hapus ke admin agar dapat mendaftar ulang.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        type="button"
+                        onClick={() => handleWhatsAppDeleteRequest(cekResult.data.nama_lengkap || cekResult.data.nama || '', cekResult.data.token || cekToken)}
+                        className="flex items-center justify-center gap-1 py-2 px-1.5 bg-white border border-amber-300 text-amber-800 text-[10px] font-bold rounded-lg hover:bg-amber-100 transition-colors active:scale-95"
+                      >
+                        <MessageCircle size={12} className="text-emerald-600 shrink-0" /> Request Delete
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => handlePrefillForReRegistration(cekResult.data)}
+                        className="flex items-center justify-center gap-1 py-2 px-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold rounded-lg transition-colors active:scale-95"
+                      >
+                        <RefreshCw size={12} className="shrink-0" /> Koreksi Data Form
+                      </button>
+                    </div>
+                  </div>
+
                   <button onClick={() => setCekResult(null)} className={`px-6 py-3 ${t.primaryBg} text-white font-bold rounded-xl hover:opacity-90 transition-colors w-full active:scale-95`}>
                     Tutup
                   </button>

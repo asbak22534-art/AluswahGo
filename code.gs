@@ -19,6 +19,11 @@ function doPost(e) {
       });
     }
 
+    // 2. CEK APAKAH INI REQUEST UNTUK UPDATE DATA SPMB (Correction Mode)
+    if (e.parameter && e.parameter.action === 'updateSPMB') {
+      return handleUpdateSPMB(e);
+    }
+
     // 2. CEK APAKAH INI REQUEST DARI FORM SPMB (tidak ada parameter action, tapi ada nama_lengkap)
     if (e.parameter && e.parameter.nama_lengkap) {
       return handleSubmitSPMB(e);
@@ -236,9 +241,47 @@ function doGet(e) {
       case "checkLaporan":
         return ContentService.createTextOutput(JSON.stringify(checkLaporan(e.parameter.nama, e.parameter.bulan, e.parameter.pekan))).setMimeType(ContentService.MimeType.JSON);
       case "checkTapel":
+        try {
+          const reqTapel = e.parameter.tapel;
+          const sheetTapel = ss.getSheetByName('dataSPMB');
+          if (sheetTapel && reqTapel) {
+            const dataTapel = sheetTapel.getDataRange().getValues();
+            for (let i = 1; i < dataTapel.length; i++) {
+              if (dataTapel[i][0] && dataTapel[i][0].toString().trim() === reqTapel.trim()) {
+                const statusTapel = dataTapel[i][5] ? dataTapel[i][5].toString().trim() : 'Buka';
+                return ContentService.createTextOutput(JSON.stringify({
+                  status: statusTapel
+                })).setMimeType(ContentService.MimeType.JSON);
+              }
+            }
+          }
+        } catch (err) {
+          // Fallback if error
+        }
         return ContentService.createTextOutput(JSON.stringify({
           status: "Buka"
         })).setMimeType(ContentService.MimeType.JSON);
+        
+      case "getWaTemplate":
+        try {
+          const sheetWa = ss.getSheetByName("dataSPMB");
+          let correctionTemplate = "";
+          let contactTemplate = "";
+          if (sheetWa) {
+            correctionTemplate = sheetWa.getRange("M5").getValue();
+            contactTemplate = sheetWa.getRange("M4").getValue();
+          }
+          return ContentService.createTextOutput(JSON.stringify({
+            status: "success",
+            correction: correctionTemplate ? correctionTemplate.toString() : "",
+            contact: contactTemplate ? contactTemplate.toString() : ""
+          })).setMimeType(ContentService.MimeType.JSON);
+        } catch (err) {
+          return ContentService.createTextOutput(JSON.stringify({
+            status: "error",
+            message: err.toString()
+          })).setMimeType(ContentService.MimeType.JSON);
+        }
         
       case "validate":
         const nama = e.parameter.nama;
@@ -268,10 +311,24 @@ function doGet(e) {
               return ContentService.createTextOutput(JSON.stringify({
                 status: "found",
                 data: {
-                  nama_lengkap: dataCheck[i][2],
-                  tgl_lahir: dataCheck[i][5],
-                  tapel: dataCheck[i][6],
-                  asal_sekolah: dataCheck[i][7]
+                  token: dataCheck[i][1] ? dataCheck[i][1].toString() : '',
+                  nama_lengkap: dataCheck[i][2] ? dataCheck[i][2].toString() : '',
+                  nama_panggilan: dataCheck[i][3] ? dataCheck[i][3].toString() : '',
+                  jenis_kelamin: dataCheck[i][4] ? dataCheck[i][4].toString() : '',
+                  tgl_lahir: dataCheck[i][5] ? dataCheck[i][5].toString() : '',
+                  tapel: dataCheck[i][6] ? dataCheck[i][6].toString() : '',
+                  asal_sekolah: dataCheck[i][7] ? dataCheck[i][7].toString() : '',
+                  nama_ayah: dataCheck[i][8] ? dataCheck[i][8].toString() : '',
+                  pekerjaan_ayah: dataCheck[i][9] ? dataCheck[i][9].toString() : '',
+                  nama_ibu: dataCheck[i][10] ? dataCheck[i][10].toString() : '',
+                  pekerjaan_ibu: dataCheck[i][11] ? dataCheck[i][11].toString() : '',
+                  alamat_rt: dataCheck[i][12] !== undefined ? dataCheck[i][12].toString() : '',
+                  alamat_rw: dataCheck[i][13] !== undefined ? dataCheck[i][13].toString() : '',
+                  alamat_desa: dataCheck[i][14] ? dataCheck[i][14].toString() : '',
+                  alamat_kecamatan: dataCheck[i][15] ? dataCheck[i][15].toString() : '',
+                  alamat_kabupaten: dataCheck[i][16] ? dataCheck[i][16].toString() : '',
+                  nomor_hp: dataCheck[i][17] ? dataCheck[i][17].toString() : '',
+                  sumber_info_check: dataCheck[i][18] ? dataCheck[i][18].toString() : ''
                 }
               })).setMimeType(ContentService.MimeType.JSON);
             }
@@ -692,6 +749,63 @@ function handleSubmitSPMB(e) {
     status: 'success',
     token: token,
     message: 'Pendaftaran berhasil'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleUpdateSPMB(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Pendaftar_SPMB');
+  if (!sheet) {
+    sheet = initializeSPMBSheet();
+  }
+  
+  const token = e.parameter.token;
+  if (!token) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: 'Token pendaftaran tidak ditemukan'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  let rowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1] === token) { // Column B is Token (index 1)
+      rowIndex = i + 1; // 1-based index
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: 'Data dengan token tersebut tidak ditemukan di database'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Update all editable columns (except Timestamp and Token)
+  sheet.getRange(rowIndex, 3).setValue(e.parameter.nama_lengkap || '');
+  sheet.getRange(rowIndex, 4).setValue(e.parameter.nama_panggilan || '');
+  sheet.getRange(rowIndex, 5).setValue(e.parameter.jenis_kelamin || '');
+  sheet.getRange(rowIndex, 6).setValue(e.parameter.tgl_lahir || '');
+  sheet.getRange(rowIndex, 7).setValue(e.parameter.tapel || '');
+  sheet.getRange(rowIndex, 8).setValue(e.parameter.asal_sekolah || '');
+  sheet.getRange(rowIndex, 9).setValue(e.parameter.nama_ayah || '');
+  sheet.getRange(rowIndex, 10).setValue(e.parameter.pekerjaan_ayah || '');
+  sheet.getRange(rowIndex, 11).setValue(e.parameter.nama_ibu || '');
+  sheet.getRange(rowIndex, 12).setValue(e.parameter.pekerjaan_ibu || '');
+  sheet.getRange(rowIndex, 13).setValue(e.parameter.alamat_rt || '');
+  sheet.getRange(rowIndex, 14).setValue(e.parameter.alamat_rw || '');
+  sheet.getRange(rowIndex, 15).setValue(e.parameter.alamat_desa || '');
+  sheet.getRange(rowIndex, 16).setValue(e.parameter.alamat_kecamatan || '');
+  sheet.getRange(rowIndex, 17).setValue(e.parameter.alamat_kabupaten || '');
+  sheet.getRange(rowIndex, 18).setValue(e.parameter.nomor_hp || '');
+  sheet.getRange(rowIndex, 19).setValue(e.parameter.sumber_info_check || '');
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    status: 'success',
+    token: token,
+    message: 'Data pendaftaran berhasil diperbarui'
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
