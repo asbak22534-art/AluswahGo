@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, RefreshCw, FileText, Users, CalendarCheck, X, MessageCircle, BarChart3, Building } from 'lucide-react';
+import { ArrowLeft, RefreshCw, FileText, Users, CalendarCheck, X, MessageCircle, BarChart3, Building, ExternalLink } from 'lucide-react';
 import { ThemeConfig } from '../types';
 import { GlobalRunningText } from '../components/GlobalRunningText';
 import { LazyImage } from '../components/LazyImage';
+import { useData } from '../context/DataContext';
+import { getSpmbExternalUrl } from '../utils/spmbUtils';
 
 const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=2096545075';
 
@@ -26,6 +28,58 @@ interface GlobalStats {
 }
 
 export function SPMBView({ t, onBack, onNavigate, title }: { t: ThemeConfig, onBack: () => void, onNavigate: (view: string) => void, title?: string }) {
+  const { data: appData } = useData();
+  const [csvB21Url, setCsvB21Url] = useState<string>('');
+
+  const externalSpmbUrl = getSpmbExternalUrl(appData?.profil) || csvB21Url;
+
+  useEffect(() => {
+    if (!externalSpmbUrl) {
+      const fetchProfilCsvB21 = async () => {
+        try {
+          const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
+          const response = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
+          if (!response.ok) return;
+          const csvText = await response.text();
+          const rows = csvText.split('\n').map(row => {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < row.length; i++) {
+              if (row[i] === '"') {
+                inQuotes = !inQuotes;
+              } else if (row[i] === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+              } else {
+                current += row[i];
+              }
+            }
+            result.push(current.trim());
+            return result;
+          });
+
+          if (rows.length > 20 && rows[20][1]) {
+            const valB21 = rows[20][1].replace(/"/g, '').trim();
+            if (valB21 && (valB21.toLowerCase().startsWith('http') || (valB21.includes('.') && !valB21.includes(' ')))) {
+              const formatted = /^https?:\/\//i.test(valB21) ? valB21 : `https://${valB21}`;
+              setCsvB21Url(formatted);
+            }
+          }
+        } catch (e) {
+          console.error('Error checking Profil B21 CSV', e);
+        }
+      };
+      fetchProfilCsvB21();
+    }
+  }, [externalSpmbUrl, appData?.profil]);
+
+  useEffect(() => {
+    if (externalSpmbUrl) {
+      window.location.href = externalSpmbUrl;
+    }
+  }, [externalSpmbUrl]);
+
   const [data, setData] = useState<SPMBData[]>([]);
   const [globalStats, setGlobalStats] = useState<GlobalStats>({ alumni: 0, siswaAktif: 0, brochureUrl: '', waNumber: '', waMessage: '' });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -174,6 +228,49 @@ export function SPMBView({ t, onBack, onNavigate, title }: { t: ThemeConfig, onB
 
   const selectedData = data[selectedIndex];
   const currentStatus = selectedData ? getRegistrationStatus(selectedData) : null;
+
+  if (externalSpmbUrl) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-gray-50 z-50 flex flex-col h-full overflow-hidden"
+      >
+        <header className={`px-4 py-3 flex items-center justify-between ${t.primaryBg} text-white shadow-md shrink-0`}>
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h2 className="font-bold text-lg leading-tight">{title || "Pendaftaran SPMB"}</h2>
+              <p className="text-[10px] text-white/80 font-medium uppercase tracking-wider">MIS IT Al Uswah</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-100 max-w-md w-full flex flex-col items-center gap-4">
+            <div className={`w-14 h-14 rounded-2xl ${t.secondaryBg} ${t.primaryText} flex items-center justify-center animate-spin`}>
+              <RefreshCw size={28} />
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg">Mengarahkan ke Halaman SPMB...</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Anda sedang dialihkan ke website pendaftaran resmi SPMB. Jika tidak berpindah secara otomatis, silakan klik tombol di bawah.
+            </p>
+            <a
+              href={externalSpmbUrl}
+              className={`w-full py-3.5 px-4 ${t.primaryBg} text-white font-bold rounded-xl shadow-md hover:opacity-90 transition-all text-sm flex items-center justify-center gap-2`}
+            >
+              <span>Buka Halaman Web SPMB</span>
+              <ExternalLink size={18} />
+            </a>
+            <button onClick={onBack} className="text-xs text-gray-400 hover:text-gray-600 font-medium underline mt-1">
+              Kembali ke Aplikasi
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div 

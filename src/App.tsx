@@ -18,6 +18,7 @@ import { GlobalRunningText } from './components/GlobalRunningText';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTheme } from './context/ThemeContext';
 import { useData } from './context/DataContext';
+import { getSpmbExternalUrl } from './utils/spmbUtils';
 import { AbsensiView } from './views/AbsensiView';
 import { AffiliasiView } from './views/AffiliasiView';
 import { YaumiyahView } from './views/YaumiyahView';
@@ -171,7 +172,50 @@ export default function App() {
     }
   }, []);
 
-  const handleNavigate = (view: typeof currentView) => {
+  const handleNavigate = async (view: typeof currentView) => {
+    if (view === 'spmb') {
+      let spmbExternalUrl = getSpmbExternalUrl(data?.profil);
+
+      if (!spmbExternalUrl) {
+        try {
+          const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
+          const res = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
+          if (res.ok) {
+            const text = await res.text();
+            const rows = text.split('\n').map(row => {
+              const result = [];
+              let current = '';
+              let inQuotes = false;
+              for (let i = 0; i < row.length; i++) {
+                if (row[i] === '"') {
+                  inQuotes = !inQuotes;
+                } else if (row[i] === ',' && !inQuotes) {
+                  result.push(current.trim());
+                  current = '';
+                } else {
+                  current += row[i];
+                }
+              }
+              result.push(current.trim());
+              return result;
+            });
+            if (rows.length > 20 && rows[20][1]) {
+              const valB21 = rows[20][1].replace(/"/g, '').trim();
+              if (valB21 && (valB21.toLowerCase().startsWith('http') || (valB21.includes('.') && !valB21.includes(' ')))) {
+                spmbExternalUrl = /^https?:\/\//i.test(valB21) ? valB21 : `https://${valB21}`;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching Profil B21 CSV in handleNavigate", e);
+        }
+      }
+
+      if (spmbExternalUrl) {
+        window.location.href = spmbExternalUrl;
+        return;
+      }
+    }
     if (view !== currentView) {
       window.history.pushState({ view, appState: true }, '', view === 'home' ? '/' : `#${view}`);
       setCurrentView(view);
