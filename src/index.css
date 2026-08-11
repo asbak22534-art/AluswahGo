@@ -72,3 +72,47 @@ html, body {
 .animate-shimmer {
   animation: shimmer 3s infinite ease-in-out;
 }
+
+/* Container untuk animasi titik */
+.theme-dots {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    height: 50px; /* Sesuaikan dengan tinggi area yang dibutuhkan */
+    margin: 0 auto 15px auto; /* Margin bawah untuk jarak ke teks */
+}
+
+/* Base style untuk setiap titik */
+.theme-dots div {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    animation: bounce-dots 1.4s infinite ease-in-out both;
+}
+
+/* Warna dan delay spesifik untuk masing-masing titik */
+.theme-dots div:nth-child(1) { 
+    background-color: #006941; /* Hijau Tua */
+    animation-delay: -0.32s; 
+}
+.theme-dots div:nth-child(2) { 
+    background-color: #009663; /* Hijau Muda */
+    animation-delay: -0.16s; 
+}
+.theme-dots div:nth-child(3) { 
+    background-color: #F1B600; /* Kuning */
+}
+
+/* Keyframes untuk efek berdenyut/memantul */
+@keyframes bounce-dots {
+    0%, 80%, 100% { 
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+

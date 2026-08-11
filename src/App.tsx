@@ -4,7 +4,7 @@ import {
   Wallet, CalendarCheck, MessageSquare, BookOpen, X, Palette,
   CheckCheck, BellOff, Book, Heart, Calendar, Users, Star, Award, Building, PieChart,
   Play, Facebook, Instagram, Youtube, MapPin, MessageCircle, Share2,
-  ClipboardCheck, Handshake, ChevronUp, AlertCircle, Image as ImageIcon, Download
+  ClipboardCheck, Handshake, ChevronUp, AlertCircle, Image as ImageIcon, Download, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Notification } from './types';
@@ -118,6 +118,7 @@ export default function App() {
     return (localStorage.getItem('currentView') as any) || 'home';
   });
   const [showExitModal, setShowExitModal] = useState(false);
+  const [isSpmbLoading, setIsSpmbLoading] = useState(false);
   const isExiting = React.useRef(false);
 
   // Bagian Instalasi PWA
@@ -174,6 +175,7 @@ export default function App() {
 
   const handleNavigate = async (view: typeof currentView) => {
     if (view === 'spmb') {
+      setIsSpmbLoading(true);
       let spmbExternalUrl = getSpmbExternalUrl(data?.profil);
 
       if (!spmbExternalUrl) {
@@ -215,6 +217,7 @@ export default function App() {
         window.location.href = spmbExternalUrl;
         return;
       }
+      setIsSpmbLoading(false);
     }
     if (view !== currentView) {
       window.history.pushState({ view, appState: true }, '', view === 'home' ? '/' : `#${view}`);
@@ -1718,6 +1721,32 @@ export default function App() {
                   {currentView === 'notification-center' && <NotificationCenterView t={t} onBack={handleBack} onSelectNotif={handleNotifClick} />}
                 </Suspense>
               </ErrorBoundary>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* SPMB Redirect Loading Modal */}
+        <AnimatePresence>
+          {isSpmbLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center justify-center border border-gray-100">
+                <div className="theme-dots">
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-base sm:text-lg">Mengarahkan ke Layanan SPMB...</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
+                    Sedang membuka halaman pendaftaran siswa baru. Silakan tunggu sebentar.
+                  </p>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

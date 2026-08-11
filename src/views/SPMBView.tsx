@@ -249,8 +249,10 @@ export function SPMBView({ t, onBack, onNavigate, title }: { t: ThemeConfig, onB
 
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-100 max-w-md w-full flex flex-col items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl ${t.secondaryBg} ${t.primaryText} flex items-center justify-center animate-spin`}>
-              <RefreshCw size={28} />
+            <div className="theme-dots">
+              <div></div>
+              <div></div>
+              <div></div>
             </div>
             <h3 className="font-bold text-gray-800 text-lg">Mengarahkan ke Halaman SPMB...</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
