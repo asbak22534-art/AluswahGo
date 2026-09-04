@@ -15,8 +15,7 @@ export default defineConfig(({mode}) => {
         injectRegister: 'auto',
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          cleanupOutdatedCaches: true,
-          navigateFallbackDenylist: [/^\/radial/]
+          cleanupOutdatedCaches: true
         },
         includeAssets: ['logo.png', 'apple-touch-icon-180x180.png', 'pwa-192x192.png', 'pwa-512x512.png', 'maskable-icon-512x512.png', 'maskable-icon-192x192.png'],
         manifest: {
@@ -70,13 +69,6 @@ export default defineConfig(({mode}) => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      proxy: {
-        '/radial': {
-          target: 'https://radial.misitaluswah.sch.id',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/radial/, '') || '/',
-        },
-      },
     },
   };
 });

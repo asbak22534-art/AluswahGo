@@ -19,6 +19,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTheme } from './context/ThemeContext';
 import { useData } from './context/DataContext';
 import { getSpmbExternalUrl } from './utils/spmbUtils';
+import { getRadialExternalUrl } from './utils/radialUtils';
 import { AbsensiView } from './views/AbsensiView';
 import { AffiliasiView } from './views/AffiliasiView';
 import { YaumiyahView } from './views/YaumiyahView';
@@ -142,14 +143,8 @@ export default function App() {
       (window as any).deferredPWAInstallPrompt = null;
     };
 
-    const handlePageShow = () => {
-      setIsRadialLoading(false);
-      setIsSpmbLoading(false);
-    };
-
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
-    window.addEventListener('pageshow', handlePageShow);
 
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setDeferredPrompt(null);
@@ -158,7 +153,6 @@ export default function App() {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
-      window.removeEventListener('pageshow', handlePageShow);
     };
   }, []);
 
@@ -230,10 +224,48 @@ export default function App() {
 
     if (view === 'radial') {
       setIsRadialLoading(true);
-      setTimeout(() => {
-        window.location.assign('/radial/');
-      }, 400);
-      return;
+      let radialExternalUrl = getRadialExternalUrl(data?.profil);
+
+      if (!radialExternalUrl) {
+        try {
+          const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
+          const res = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
+          if (res.ok) {
+            const text = await res.text();
+            const rows = text.split('\n').map(row => {
+              const result = [];
+              let current = '';
+              let inQuotes = false;
+              for (let i = 0; i < row.length; i++) {
+                if (row[i] === '"') {
+                  inQuotes = !inQuotes;
+                } else if (row[i] === ',' && !inQuotes) {
+                  result.push(current.trim());
+                  current = '';
+                } else {
+                  current += row[i];
+                }
+              }
+              result.push(current.trim());
+              return result;
+            });
+            if (rows.length > 16 && rows[16][1]) {
+              const valB17 = rows[16][1].replace(/"/g, '').trim();
+              if (valB17 && (valB17.toLowerCase().startsWith('http') || (valB17.includes('.') && !valB17.includes(' ')))) {
+                radialExternalUrl = /^https?:\/\//i.test(valB17) ? valB17 : `https://${valB17}`;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching Profil B17 CSV in handleNavigate", e);
+        }
+      }
+
+      if (radialExternalUrl) {
+        window.location.href = radialExternalUrl;
+        return;
+      }
+      setIsRadialLoading(false);
     }
     if (view !== currentView) {
       window.history.pushState({ view, appState: true }, '', view === 'home' ? '/' : `#${view}`);
