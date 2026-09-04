@@ -893,50 +893,52 @@ export default function App() {
       <div className="w-full h-full bg-gray-50 relative overflow-hidden flex flex-col lg:flex-row font-sans transition-colors duration-300">
         
         {/* Sidebar (Desktop Only) */}
-        <aside className={`hidden lg:flex w-64 bg-white border-r border-gray-100 flex-col ${currentView === 'radial' ? 'z-[60]' : 'z-40'} shadow-sm shrink-0`}>
-          <div className="p-6 flex items-center gap-3 border-b border-gray-50">
-            {isLoading ? (
-              <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse shrink-0"></div>
-            ) : (
-              <img 
-                src={formatImageUrl(data?.header?.logo) || "https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB"}
-                alt={`Logo ${data?.header?.judul || "MIS IT Al Uswah"}`}
-                className="w-10 h-10 rounded-xl object-cover shadow-sm shrink-0"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-            )}
-            <div className="min-w-0">
+        {currentView !== 'radial' && (
+          <aside className="hidden lg:flex w-64 bg-white border-r border-gray-100 flex-col z-40 shadow-sm shrink-0">
+            <div className="p-6 flex items-center gap-3 border-b border-gray-50">
               {isLoading ? (
-                <>
-                  <div className="w-24 h-5 bg-gray-200 rounded animate-pulse mb-1"></div>
-                  <div className="w-20 h-3 bg-gray-200/60 rounded animate-pulse"></div>
-                </>
+                <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse shrink-0"></div>
               ) : (
-                <>
-                  <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "MIS IT Al Uswah"}</h1>
-                  <p className={`text-xs ${t.primaryText} font-medium transition-colors line-clamp-2`}>{data?.header?.sub_judul || "Portal Sekolah"}</p>
-                </>
+                <img 
+                  src={formatImageUrl(data?.header?.logo) || "https://drive.google.com/uc?export=view&id=1gEHwUNqyq_qJridKdi7GtGVdOvrT2lKB"}
+                  alt={`Logo ${data?.header?.judul || "MIS IT Al Uswah"}`}
+                  className="w-10 h-10 rounded-xl object-cover shadow-sm shrink-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
               )}
+              <div className="min-w-0">
+                {isLoading ? (
+                  <>
+                    <div className="w-24 h-5 bg-gray-200 rounded animate-pulse mb-1"></div>
+                    <div className="w-20 h-3 bg-gray-200/60 rounded animate-pulse"></div>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="font-bold text-gray-800 leading-tight truncate">{data?.header?.judul || "MIS IT Al Uswah"}</h1>
+                    <p className={`text-xs ${t.primaryText} font-medium transition-colors line-clamp-2`}>{data?.header?.sub_judul || "Portal Sekolah"}</p>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-          <nav className="flex-1 px-4 py-6 flex flex-col gap-2">
-            {deferredPrompt && (
-              <button 
-                onClick={handleInstallClick}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-2 font-bold text-white shadow-sm hover:opacity-90 transition-opacity ${t.primaryBg}`}
-              >
-                <Download size={20} className="animate-bounce" />
-                <span>Instal Aplikasi</span>
-              </button>
-            )}
-            <SidebarItem icon={<Home size={20} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
-            <SidebarItem icon={<PieChart size={20} />} label="Radial" active={currentView === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
-            <SidebarItem icon={<FileText size={20} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
-            <SidebarItem icon={<User size={20} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
-            <SidebarItem icon={<MessageCircle size={20} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
-          </nav>
-        </aside>
+            <nav className="flex-1 px-4 py-6 flex flex-col gap-2">
+              {deferredPrompt && (
+                <button 
+                  onClick={handleInstallClick}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-2 font-bold text-white shadow-sm hover:opacity-90 transition-opacity ${t.primaryBg}`}
+                >
+                  <Download size={20} className="animate-bounce" />
+                  <span>Instal Aplikasi</span>
+                </button>
+              )}
+              <SidebarItem icon={<Home size={20} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
+              <SidebarItem icon={<PieChart size={20} />} label="Radial" active={(currentView as string) === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
+              <SidebarItem icon={<FileText size={20} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
+              <SidebarItem icon={<User size={20} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
+              <SidebarItem icon={<MessageCircle size={20} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
+            </nav>
+          </aside>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative">
@@ -954,7 +956,8 @@ export default function App() {
           </AnimatePresence>
 
           {/* Top App Bar */}
-          <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md px-4 md:px-8 py-3 flex items-center justify-between shadow-sm lg:shadow-none lg:border-b lg:border-gray-100">
+          {currentView !== 'radial' && (
+            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md px-4 md:px-8 py-3 flex items-center justify-between shadow-sm lg:shadow-none lg:border-b lg:border-gray-100">
             <div className="flex items-center gap-3 lg:hidden min-w-0">
               {isLoading ? (
                 <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse shadow-sm shrink-0"></div>
@@ -1086,9 +1089,10 @@ export default function App() {
               </div>
             </div>
           </header>
+          )}
 
           {/* Running Text (Global) */}
-          <GlobalRunningText t={t} />
+          {currentView !== 'radial' && <GlobalRunningText t={t} />}
 
           {/* Main Scrollable Content */}
           <main id="main-scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0">
@@ -1593,13 +1597,15 @@ export default function App() {
         </div>
 
         {/* Bottom Navigation Bar (Mobile & Tablet) */}
-        <nav className={`lg:hidden fixed bottom-0 left-0 right-0 ${currentView === 'radial' ? 'z-[60]' : 'z-40'} bg-white/95 backdrop-blur-lg border-t border-gray-200 px-2 md:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex justify-around items-center shadow-[0_-8px_30px_rgba(0,0,0,0.08)]`}>
-          <BottomNavItem icon={<Home size={24} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
-          <BottomNavItem icon={<PieChart size={24} />} label="Radial" active={currentView === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
-          <BottomNavItem icon={<MessageCircle size={24} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
-          <BottomNavItem icon={<FileText size={24} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
-          <BottomNavItem icon={<User size={24} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
-        </nav>
+        {currentView !== 'radial' && (
+          <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-200 px-2 md:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex justify-around items-center shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+            <BottomNavItem icon={<Home size={24} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
+            <BottomNavItem icon={<PieChart size={24} />} label="Radial" active={(currentView as string) === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
+            <BottomNavItem icon={<MessageCircle size={24} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
+            <BottomNavItem icon={<FileText size={24} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
+            <BottomNavItem icon={<User size={24} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
+          </nav>
+        )}
 
         {/* Notification Detail Modal */}
         <AnimatePresence>
@@ -1696,8 +1702,8 @@ export default function App() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className={`absolute inset-0 bg-gray-50 z-50 flex flex-col h-full overflow-hidden ${
-                currentView === 'radial' ? 'pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0 lg:left-64' : ''
+              className={`absolute inset-0 bg-gray-50 flex flex-col h-full overflow-hidden ${
+                currentView === 'radial' ? 'fixed inset-0 w-full h-[100dvh] z-[70] bg-white' : 'z-50'
               }`}
             >
               <ErrorBoundary>

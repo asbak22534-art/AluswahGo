@@ -14,7 +14,7 @@ export default function RadialView({ t }: RadialViewProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   return (
-    <div className="flex flex-col h-full w-full min-h-0 relative overflow-hidden bg-white">
+    <div className="fixed inset-0 w-full h-[100dvh] bg-white flex flex-col overflow-hidden z-[70]">
       {/* Loading Overlay */}
       <AnimatePresence>
         {isLoading && (
@@ -23,7 +23,7 @@ export default function RadialView({ t }: RadialViewProps) {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="absolute inset-0 z-20 bg-white flex flex-col items-center justify-center p-6 text-center select-none"
+            className="fixed inset-0 z-20 bg-white flex flex-col items-center justify-center p-6 text-center select-none"
           >
             <div className="flex flex-col items-center gap-3">
               <div className={`w-12 h-12 rounded-2xl ${t.primaryLightBg} flex items-center justify-center shadow-inner`}>
@@ -43,7 +43,7 @@ export default function RadialView({ t }: RadialViewProps) {
       </AnimatePresence>
 
       {/* Embedded RADIAL iframe */}
-      <div className="flex-1 w-full min-h-0 relative bg-white">
+      <div className="w-full h-full flex-1 min-h-0 relative bg-white">
         <iframe
           src={RADIAL_URL}
           title="RADIAL — Raport Digital MIS IT Al Uswah"
