@@ -6,11 +6,15 @@
       "destination": "https://radial.misitaluswah.sch.id/"
     },
     {
+      "source": "/radial/",
+      "destination": "https://radial.misitaluswah.sch.id/"
+    },
+    {
       "source": "/radial/:path*",
       "destination": "https://radial.misitaluswah.sch.id/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!radial(?:/|$)).*)",
       "destination": "/index.html"
     }
   ]
