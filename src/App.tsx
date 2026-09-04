@@ -19,6 +19,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTheme } from './context/ThemeContext';
 import { useData } from './context/DataContext';
 import { getSpmbExternalUrl } from './utils/spmbUtils';
+import { getRadialExternalUrl } from './utils/radialUtils';
 import { AbsensiView } from './views/AbsensiView';
 import { AffiliasiView } from './views/AffiliasiView';
 import { YaumiyahView } from './views/YaumiyahView';
@@ -119,6 +120,7 @@ export default function App() {
   });
   const [showExitModal, setShowExitModal] = useState(false);
   const [isSpmbLoading, setIsSpmbLoading] = useState(false);
+  const [isRadialLoading, setIsRadialLoading] = useState(false);
   const isExiting = React.useRef(false);
 
   // Bagian Instalasi PWA
@@ -218,6 +220,52 @@ export default function App() {
         return;
       }
       setIsSpmbLoading(false);
+    }
+
+    if (view === 'radial') {
+      setIsRadialLoading(true);
+      let radialExternalUrl = getRadialExternalUrl(data?.profil);
+
+      if (!radialExternalUrl) {
+        try {
+          const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
+          const res = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
+          if (res.ok) {
+            const text = await res.text();
+            const rows = text.split('\n').map(row => {
+              const result = [];
+              let current = '';
+              let inQuotes = false;
+              for (let i = 0; i < row.length; i++) {
+                if (row[i] === '"') {
+                  inQuotes = !inQuotes;
+                } else if (row[i] === ',' && !inQuotes) {
+                  result.push(current.trim());
+                  current = '';
+                } else {
+                  current += row[i];
+                }
+              }
+              result.push(current.trim());
+              return result;
+            });
+            if (rows.length > 16 && rows[16][1]) {
+              const valB17 = rows[16][1].replace(/"/g, '').trim();
+              if (valB17 && (valB17.toLowerCase().startsWith('http') || (valB17.includes('.') && !valB17.includes(' ')))) {
+                radialExternalUrl = /^https?:\/\//i.test(valB17) ? valB17 : `https://${valB17}`;
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching Profil B17 CSV in handleNavigate", e);
+        }
+      }
+
+      if (radialExternalUrl) {
+        window.location.href = radialExternalUrl;
+        return;
+      }
+      setIsRadialLoading(false);
     }
     if (view !== currentView) {
       window.history.pushState({ view, appState: true }, '', view === 'home' ? '/' : `#${view}`);
@@ -866,6 +914,7 @@ export default function App() {
     { id: 'review', label: "Review", icon: <Star size={20} /> },
     { id: 'galeri', label: "Galeri", icon: <ImageIcon size={20} /> },
     { id: 'kelulusan', label: "Cek Kelulusan", sheetLabel: "Kelulusan Kelas 6", icon: <GraduationCap size={20} /> },
+    { id: 'radial', label: "Radial", icon: <PieChart size={20} /> },
   ];
 
   let orderedServices = layananDigitalOrder.length > 0 
@@ -1744,6 +1793,32 @@ export default function App() {
                   <h3 className="font-bold text-gray-800 text-base sm:text-lg">Mengarahkan ke Layanan SPMB...</h3>
                   <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
                     Sedang membuka halaman pendaftaran siswa baru. Silakan tunggu sebentar.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Radial Redirect Loading Modal */}
+        <AnimatePresence>
+          {isRadialLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center justify-center border border-gray-100">
+                <div className="theme-dots">
+                  <div></div>
+                  <div></div>
+                  <div></div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-base sm:text-lg">Mengarahkan ke Layanan Radial...</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
+                    Sedang membuka halaman rapor digital Radial. Silakan tunggu sebentar.
                   </p>
                 </div>
               </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, TrendingUp, TrendingDown, Minus, User, BookOpen, Award, AlertCircle, Loader2, PieChart, LogOut } from 'lucide-react';
+import { ArrowLeft, Search, TrendingUp, TrendingDown, Minus, User, BookOpen, Award, AlertCircle, Loader2, PieChart, LogOut, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useData } from '../context/DataContext';
+import { getRadialExternalUrl } from '../utils/radialUtils';
 
 interface RadialViewProps {
   t: any;
@@ -21,6 +23,8 @@ interface SubjectScore {
 }
 
 export default function RadialView({ t, onBack }: RadialViewProps) {
+  const { data: appData } = useData();
+  const [csvB17Url, setCsvB17Url] = useState<string>('');
   const [nisn, setNisn] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(() => !!localStorage.getItem('savedNisn'));
@@ -31,6 +35,55 @@ export default function RadialView({ t, onBack }: RadialViewProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const SHEET_ID = '1xdSXU8QzMAKPTAXYEVGGJ1xt_78xUSc3wjFqAnos3bU';
+
+  const externalRadialUrl = getRadialExternalUrl(appData?.profil) || csvB17Url;
+
+  useEffect(() => {
+    if (!externalRadialUrl) {
+      const fetchProfilCsvB17 = async () => {
+        try {
+          const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
+          const response = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
+          if (!response.ok) return;
+          const csvText = await response.text();
+          const rows = csvText.split('\n').map(row => {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < row.length; i++) {
+              if (row[i] === '"') {
+                inQuotes = !inQuotes;
+              } else if (row[i] === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+              } else {
+                current += row[i];
+              }
+            }
+            result.push(current.trim());
+            return result;
+          });
+
+          if (rows.length > 16 && rows[16][1]) {
+            const valB17 = rows[16][1].replace(/"/g, '').trim();
+            if (valB17 && (valB17.toLowerCase().startsWith('http') || (valB17.includes('.') && !valB17.includes(' ')))) {
+              const formatted = /^https?:\/\//i.test(valB17) ? valB17 : `https://${valB17}`;
+              setCsvB17Url(formatted);
+            }
+          }
+        } catch (e) {
+          console.error("Error checking Profil B17 CSV in RadialView", e);
+        }
+      };
+      fetchProfilCsvB17();
+    }
+  }, [externalRadialUrl, appData?.profil]);
+
+  useEffect(() => {
+    if (externalRadialUrl) {
+      window.location.href = externalRadialUrl;
+    }
+  }, [externalRadialUrl]);
 
   // Menyergap tombol "back" hardware di HP ketika user sedang login
   useEffect(() => {
@@ -192,6 +245,51 @@ export default function RadialView({ t, onBack }: RadialViewProps) {
     const sumGanjil = subjectsWithBoth.reduce((sum, s) => sum + (s.ganjil as number), 0);
     const sumGenap = subjectsWithBoth.reduce((sum, s) => sum + (s.genap as number), 0);
     progress = ((sumGenap / subjectsWithBoth.length) - (sumGanjil / subjectsWithBoth.length)).toFixed(1);
+  }
+
+  if (externalRadialUrl) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-gray-50 z-50 flex flex-col h-full overflow-hidden"
+      >
+        <header className={`px-4 py-3 flex items-center justify-between ${t.primaryBg} text-white shadow-md shrink-0`}>
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h2 className="font-bold text-lg leading-tight">RADIAL (Rapor Digital)</h2>
+              <p className="text-[10px] text-white/80 font-medium uppercase tracking-wider">MIS IT Al Uswah</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-100 max-w-md w-full flex flex-col items-center gap-4">
+            <div className="theme-dots">
+              <div></div>
+              <div></div>
+              <div></div>
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg">Mengarahkan ke Halaman Radial...</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Anda sedang dialihkan ke website resmi rapor digital Radial. Jika tidak berpindah secara otomatis, silakan klik tombol di bawah.
+            </p>
+            <a
+              href={externalRadialUrl}
+              className={`w-full py-3.5 px-4 ${t.primaryBg} text-white font-bold rounded-xl shadow-md hover:opacity-90 transition-all text-sm flex items-center justify-center gap-2`}
+            >
+              <span>Buka Halaman Web Radial</span>
+              <ExternalLink size={18} />
+            </a>
+            <button onClick={onBack} className="text-xs text-gray-400 hover:text-gray-600 font-medium underline mt-1">
+              Kembali ke Aplikasi
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
   }
 
   return (
