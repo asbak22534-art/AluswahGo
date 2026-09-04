@@ -118,7 +118,6 @@ export default function App() {
     return (localStorage.getItem('currentView') as any) || 'home';
   });
   const [showExitModal, setShowExitModal] = useState(false);
-  const [isSpmbLoading, setIsSpmbLoading] = useState(false);
   const isExiting = React.useRef(false);
 
   // Bagian Instalasi PWA
@@ -173,53 +172,7 @@ export default function App() {
     }
   }, []);
 
-  const handleNavigate = async (view: typeof currentView) => {
-    if (view === 'spmb') {
-      setIsSpmbLoading(true);
-      let spmbExternalUrl = getSpmbExternalUrl(data?.profil);
-
-      if (!spmbExternalUrl) {
-        try {
-          const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
-          const res = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
-          if (res.ok) {
-            const text = await res.text();
-            const rows = text.split('\n').map(row => {
-              const result = [];
-              let current = '';
-              let inQuotes = false;
-              for (let i = 0; i < row.length; i++) {
-                if (row[i] === '"') {
-                  inQuotes = !inQuotes;
-                } else if (row[i] === ',' && !inQuotes) {
-                  result.push(current.trim());
-                  current = '';
-                } else {
-                  current += row[i];
-                }
-              }
-              result.push(current.trim());
-              return result;
-            });
-            if (rows.length > 20 && rows[20][1]) {
-              const valB21 = rows[20][1].replace(/"/g, '').trim();
-              if (valB21 && (valB21.toLowerCase().startsWith('http') || (valB21.includes('.') && !valB21.includes(' ')))) {
-                spmbExternalUrl = /^https?:\/\//i.test(valB21) ? valB21 : `https://${valB21}`;
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Error fetching Profil B21 CSV in handleNavigate", e);
-        }
-      }
-
-      if (spmbExternalUrl) {
-        window.location.href = spmbExternalUrl;
-        return;
-      }
-      setIsSpmbLoading(false);
-    }
-
+  const handleNavigate = (view: typeof currentView) => {
     if (view !== currentView) {
       window.history.pushState({ view, appState: true }, '', view === 'home' ? '/' : `#${view}`);
       setCurrentView(view);
@@ -887,13 +840,15 @@ export default function App() {
 
   const getServiceTitle = (id: string) => orderedServices.find(s => s.id === id)?.label;
 
+  const isStandaloneView = currentView === 'radial' || currentView === 'spmb';
+
   return (
     <div className="fixed inset-0 bg-gray-200 w-full flex justify-center overflow-hidden">
       {/* Main Container */}
       <div className="w-full h-full bg-gray-50 relative overflow-hidden flex flex-col lg:flex-row font-sans transition-colors duration-300">
         
         {/* Sidebar (Desktop Only) */}
-        {currentView !== 'radial' && (
+        {!isStandaloneView && (
           <aside className="hidden lg:flex w-64 bg-white border-r border-gray-100 flex-col z-40 shadow-sm shrink-0">
             <div className="p-6 flex items-center gap-3 border-b border-gray-50">
               {isLoading ? (
@@ -933,7 +888,7 @@ export default function App() {
               )}
               <SidebarItem icon={<Home size={20} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
               <SidebarItem icon={<PieChart size={20} />} label="Radial" active={(currentView as string) === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
-              <SidebarItem icon={<FileText size={20} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
+              <SidebarItem icon={<FileText size={20} />} label="SPMB" active={(currentView as string) === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
               <SidebarItem icon={<User size={20} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
               <SidebarItem icon={<MessageCircle size={20} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
             </nav>
@@ -956,7 +911,7 @@ export default function App() {
           </AnimatePresence>
 
           {/* Top App Bar */}
-          {currentView !== 'radial' && (
+          {!isStandaloneView && (
             <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md px-4 md:px-8 py-3 flex items-center justify-between shadow-sm lg:shadow-none lg:border-b lg:border-gray-100">
             <div className="flex items-center gap-3 lg:hidden min-w-0">
               {isLoading ? (
@@ -988,7 +943,7 @@ export default function App() {
             {/* Desktop Header Title */}
             <div className="hidden lg:block">
               <h2 className="text-xl font-bold text-gray-800">
-                {currentView === 'home' ? 'Beranda' : currentView === 'spmb' ? 'Pendaftaran Siswa Baru' : 'Profil Sekolah'}
+                {currentView === 'home' ? 'Beranda' : (currentView as string) === 'spmb' ? 'Pendaftaran Siswa Baru' : 'Profil Sekolah'}
               </h2>
             </div>
 
@@ -1092,7 +1047,7 @@ export default function App() {
           )}
 
           {/* Running Text (Global) */}
-          {currentView !== 'radial' && <GlobalRunningText t={t} />}
+          {!isStandaloneView && <GlobalRunningText t={t} />}
 
           {/* Main Scrollable Content */}
           <main id="main-scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-w-0">
@@ -1597,12 +1552,12 @@ export default function App() {
         </div>
 
         {/* Bottom Navigation Bar (Mobile & Tablet) */}
-        {currentView !== 'radial' && (
+        {!isStandaloneView && (
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-200 px-2 md:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex justify-around items-center shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
             <BottomNavItem icon={<Home size={24} />} label="Beranda" active={currentView === 'home'} t={t} onClick={() => handleNavigate('home')} />
             <BottomNavItem icon={<PieChart size={24} />} label="Radial" active={(currentView as string) === 'radial'} t={t} onClick={() => handleNavigate('radial')} />
             <BottomNavItem icon={<MessageCircle size={24} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
-            <BottomNavItem icon={<FileText size={24} />} label="SPMB" active={currentView === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
+            <BottomNavItem icon={<FileText size={24} />} label="SPMB" active={(currentView as string) === 'spmb'} t={t} onClick={() => handleNavigate('spmb')} />
             <BottomNavItem icon={<User size={24} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
           </nav>
         )}
@@ -1703,7 +1658,7 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               className={`absolute inset-0 bg-gray-50 flex flex-col h-full overflow-hidden ${
-                currentView === 'radial' ? 'fixed inset-0 w-full h-[100dvh] z-[70] bg-white' : 'z-50'
+                isStandaloneView ? 'fixed inset-0 w-full h-[100dvh] z-[70] bg-white' : 'z-50'
               }`}
             >
               <ErrorBoundary>
@@ -1731,32 +1686,6 @@ export default function App() {
                   {currentView === 'notification-center' && <NotificationCenterView t={t} onBack={handleBack} onSelectNotif={handleNotifClick} />}
                 </Suspense>
               </ErrorBoundary>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* SPMB Redirect Loading Modal */}
-        <AnimatePresence>
-          {isSpmbLoading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            >
-              <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center justify-center border border-gray-100">
-                <div className="theme-dots">
-                  <div></div>
-                  <div></div>
-                  <div></div>
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-800 text-base sm:text-lg">Mengarahkan ke Layanan SPMB...</h3>
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
-                    Sedang membuka halaman pendaftaran siswa baru. Silakan tunggu sebentar.
-                  </p>
-                </div>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
