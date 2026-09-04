@@ -1,5 +1,6 @@
 {
   "name": "AluswahGO",
   "description": "Mobile-first school portal for MIS IT Al Uswah",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
