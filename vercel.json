@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/radial",
+      "destination": "https://radial.misitaluswah.sch.id/"
+    },
+    {
+      "source": "/radial/:path*",
+      "destination": "https://radial.misitaluswah.sch.id/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
