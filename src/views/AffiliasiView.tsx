@@ -3,8 +3,7 @@ import { ThemeConfig } from '../types';
 import { ArrowLeft, ExternalLink, Handshake, MessageCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { LazyImage } from '../components/LazyImage';
-
-const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/gviz/tq?tqx=out:csv&sheet=dataAffiliasi';
+import { fetchSheetJsonp, DEFAULT_SPREADSHEET_ID } from '../utils/googleSheets';
 
 interface AffiliasiData {
   judul: string;
@@ -55,52 +54,34 @@ export function AffiliasiView({ t, onBack, title }: { t: ThemeConfig, onBack: ()
     const fetchData = async () => {
       setStatus('loading');
       try {
-        const response = await fetch(`${SHEETS_CSV_URL}&t=${new Date().getTime()}`);
-        if (!response.ok) throw new Error("Network response was not ok");
-        const csvText = await response.text();
-        
-        const rows = csvText.split('\n').map(row => {
-          const result = [];
-          let current = '';
-          let inQuotes = false;
-          for (let i = 0; i < row.length; i++) {
-              const char = row[i];
-              if (char === '"') inQuotes = !inQuotes;
-              else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-              else current += char;
-          }
-          result.push(current.trim());
-          return result;
-        });
+        const jsonpData = await fetchSheetJsonp(DEFAULT_SPREADSHEET_ID, 'dataAffiliasi');
+        if (!jsonpData || !jsonpData.table || !jsonpData.table.rows) {
+          throw new Error("Format data tidak sesuai");
+        }
 
         const parsedData: AffiliasiData[] = [];
         let defaultWa = '';
         let defaultMsg = 'Halo, saya tertarik untuk menjalin kerja sama dengan MIS IT Al Uswah.';
 
-        if (rows.length > 1) {
-          for (let i = 1; i < rows.length; i++) {
-            const row = rows[i];
-            if (row.length < 1) continue;
+        jsonpData.table.rows.forEach((row: any) => {
+          if (!row.c) return;
+          const judul = row.c[0]?.v ? String(row.c[0].v).trim() : '';
+          const urlGambar = row.c[1]?.v ? String(row.c[1].v).trim() : '';
+          const deskripsi = row.c[2]?.v ? String(row.c[2].v).trim() : '';
+          let whatsapp = row.c[3] ? String(row.c[3].v || row.c[3].f || '').trim().replace(/\D/g, '') : '';
+          if (whatsapp.startsWith('0')) whatsapp = '62' + whatsapp.substring(1);
+          const pesan = row.c[4]?.v ? String(row.c[4].v).trim() : '';
 
-            const judul = row.length > 0 && row[0] ? row[0].replace(/"/g, '') : '';
-            const urlGambar = row.length > 1 && row[1] ? row[1].replace(/"/g, '') : '';
-            const deskripsi = row.length > 2 && row[2] ? row[2].replace(/"/g, '') : '';
-            let whatsapp = row.length > 3 && row[3] ? row[3].replace(/"/g, '').replace(/\D/g, '') : '';
-            if (whatsapp.startsWith('0')) whatsapp = '62' + whatsapp.substring(1);
-            const pesan = row.length > 4 && row[4] ? row[4].replace(/"/g, '') : '';
-
-            if (judul) {
-              parsedData.push({ judul, urlGambar, deskripsi, whatsapp, pesan });
-            }
-
-            // Set the first valid WA as the default for CTA
-            if (!defaultWa && whatsapp) {
-              defaultWa = whatsapp;
-              if (pesan) defaultMsg = pesan;
-            }
+          if (judul) {
+            parsedData.push({ judul, urlGambar, deskripsi, whatsapp, pesan });
           }
-        }
-        
+
+          if (!defaultWa && whatsapp) {
+            defaultWa = whatsapp;
+            if (pesan) defaultMsg = pesan;
+          }
+        });
+
         setData(parsedData);
         setCtaWa({ number: defaultWa, message: defaultMsg });
         setStatus('success');

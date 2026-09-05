@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Search, GraduationCap, Sparkles, User, Calendar, Check, Award, AlertCircle, Loader2, Share2, Copy, Send, HelpCircle, X, Download, Instagram, Facebook, MessageCircle, BookOpen } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ThemeConfig } from '../types';
+import { useData } from '../context/DataContext';
+import { fetchSheetJsonp } from '../utils/googleSheets';
 
 export interface KelulusanStudent {
   nisn: string;
@@ -30,6 +32,26 @@ export function KelulusanView({ t, onBack, title }: { t: ThemeConfig, onBack: ()
 
   const SHEET_ID = '1MdnB4JZsvhggmtFdLyoYjV1a6VeVlvVaaqP6JqSIjHE';
 
+  const { data } = useData();
+  const profil = data?.profil;
+
+  useEffect(() => {
+    if (profil) {
+      if (profil.nama_sekolah) {
+        setSchoolName(profil.nama_sekolah);
+        localStorage.setItem('kelulusan_schoolName', profil.nama_sekolah);
+      }
+      if (profil.visi) {
+        setSchoolVisi(profil.visi);
+        localStorage.setItem('kelulusan_schoolVisi', profil.visi);
+      }
+      if (profil.Logo_Sekolah) {
+        setLogoUrl(profil.Logo_Sekolah);
+        localStorage.setItem('kelulusan_logoUrl', profil.Logo_Sekolah);
+      }
+    }
+  }, [profil]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onBack();
@@ -39,62 +61,6 @@ export function KelulusanView({ t, onBack, title }: { t: ThemeConfig, onBack: ()
   }, [onBack]);
 
   useEffect(() => {
-    const fetchProfilData = async () => {
-      try {
-        const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
-        const response = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
-        if (!response.ok) return;
-        const csvText = await response.text();
-        const rows = csvText.split('\n').map(row => {
-          const result = [];
-          let current = '';
-          let inQuotes = false;
-          for (let i = 0; i < row.length; i++) {
-            if (row[i] === '"') {
-              inQuotes = !inQuotes;
-            } else if (row[i] === ',' && !inQuotes) {
-              result.push(current.trim());
-              current = '';
-            } else {
-              current += row[i];
-            }
-          }
-          result.push(current.trim());
-          return result;
-        });
-
-        // B2 (Row 2, index 1) is Nama Sekolah
-        if (rows.length > 1) {
-          const valName = rows[1][1]?.replace(/"/g, '').trim();
-          if (valName) {
-            setSchoolName(valName);
-            localStorage.setItem('kelulusan_schoolName', valName);
-          }
-        }
-
-        // B4 (Row 4, index 3) is Visi
-        if (rows.length > 3) {
-          const valVisi = rows[3][1]?.replace(/"/g, '').trim();
-          if (valVisi) {
-            setSchoolVisi(valVisi);
-            localStorage.setItem('kelulusan_schoolVisi', valVisi);
-          }
-        }
-
-        // B20 (Row 20, index 19) is Logo
-        if (rows.length > 19) {
-          const valLogo = rows[19][1]?.replace(/"/g, '').trim();
-          if (valLogo && valLogo.startsWith('http')) {
-            setLogoUrl(valLogo);
-            localStorage.setItem('kelulusan_logoUrl', valLogo);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch custom profil from Google Sheet", error);
-      }
-    };
-    fetchProfilData();
-
     const savedNisn = localStorage.getItem('savedKelulusanNisn');
     if (savedNisn) {
       setNisn(savedNisn);
@@ -150,22 +116,12 @@ export function KelulusanView({ t, onBack, title }: { t: ThemeConfig, onBack: ()
 
     try {
       const q = `select * where A = '${normalizedInputNisn}'`;
-      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&tq=${encodeURIComponent(q)}`;
-      
-      const res = await fetch(url);
-      const text = await res.text();
-      const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
-      let parsedData = JSON.parse(jsonString);
+      let parsedData = await fetchSheetJsonp(SHEET_ID, undefined, q);
 
       // Try fallback to number search if string search returns nothing and input is numeric
       if ((!parsedData.table || !parsedData.table.rows || parsedData.table.rows.length === 0) && /^\d+$/.test(normalizedInputNisn)) {
         const fallbackQ = `select * where A = ${normalizedInputNisn}`;
-        const fallbackUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&tq=${encodeURIComponent(fallbackQ)}`;
-        
-        const fbRes = await fetch(fallbackUrl);
-        const fbText = await fbRes.text();
-        const fbJsonString = fbText.substring(fbText.indexOf('{'), fbText.lastIndexOf('}') + 1);
-        parsedData = JSON.parse(fbJsonString);
+        parsedData = await fetchSheetJsonp(SHEET_ID, undefined, fallbackQ);
       }
 
       if (!parsedData.table || !parsedData.table.rows || parsedData.table.rows.length === 0) {

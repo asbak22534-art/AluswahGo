@@ -3,15 +3,14 @@ import { motion } from 'motion/react';
 import { ArrowLeft, MapPin, Target, Users, BookOpen, Award, GraduationCap, Globe, Facebook, Instagram, Youtube, Video } from 'lucide-react';
 import { ThemeConfig } from '../types';
 import { useData } from '../context/DataContext';
-
-const SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=2096545075';
+import { fetchSheetJsonp, DEFAULT_SPREADSHEET_ID } from '../utils/googleSheets';
 
 export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
   const { data, isLoading } = useData();
   const profil = data?.profil || {};
   
   const [spmbWa, setSpmbWa] = useState<{number: string, message: string}>({
-    number: profil.wa || '6282333427597',
+    number: profil.wa || '6282244270636',
     message: ''
   });
   
@@ -28,44 +27,26 @@ export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }
   useEffect(() => {
     const fetchSpmbWa = async () => {
       try {
-        const response = await fetch(`${SHEETS_CSV_URL}&t=${new Date().getTime()}`);
-        if (!response.ok) return;
-        const csvText = await response.text();
-        
-        const rows = csvText.split('\n').map(row => {
-          const result = [];
-          let current = '';
-          let inQuotes = false;
-          for (let i = 0; i < row.length; i++) {
-            if (row[i] === '"') {
-              inQuotes = !inQuotes;
-            } else if (row[i] === ',' && !inQuotes) {
-              result.push(current.trim());
-              current = '';
-            } else {
-              current += row[i];
-            }
-          }
-          result.push(current.trim());
-          return result;
-        });
+        const jsonpData = await fetchSheetJsonp(DEFAULT_SPREADSHEET_ID, 'dataSPMB');
+        if (!jsonpData || !jsonpData.table || !jsonpData.table.rows) return;
 
         let waNumber = spmbWa.number;
         let waMessage = 'Halo, saya ingin meminta informasi terkait sekolah dan SPMB.';
 
-        if (rows.length > 1 && rows[1][12]) {
-          let wa = rows[1][12].replace(/"/g, '').replace(/\D/g, '');
+        const rows = jsonpData.table.rows;
+        if (rows.length > 0 && rows[0].c && rows[0].c[12]) {
+          let wa = String(rows[0].c[12].v || rows[0].c[12].f || '').trim().replace(/\D/g, '');
           if (wa.startsWith('0')) wa = '62' + wa.substring(1);
           if (wa) waNumber = wa;
         }
-        if (rows.length > 2 && rows[2][12]) {
-          let msg = rows[2][12].replace(/"/g, '');
-          if (msg.trim()) waMessage = msg;
+        if (rows.length > 1 && rows[1].c && rows[1].c[12]) {
+          let msg = String(rows[1].c[12].v || rows[1].c[12].f || '').trim();
+          if (msg) waMessage = msg;
         }
 
         setSpmbWa({ number: waNumber, message: waMessage });
       } catch (error) {
-        console.error("Failed to fetch SPMB WA data", error);
+        // Fallback silently without throwing unhandled network errors
       }
     };
 

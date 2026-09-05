@@ -19,6 +19,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTheme } from './context/ThemeContext';
 import { useData } from './context/DataContext';
 import { getSpmbExternalUrl } from './utils/spmbUtils';
+import { fetchSheetJsonp } from './utils/googleSheets';
 import { AbsensiView } from './views/AbsensiView';
 import { AffiliasiView } from './views/AffiliasiView';
 import { YaumiyahView } from './views/YaumiyahView';
@@ -554,29 +555,21 @@ export default function App() {
 
     const fetchOptionalConfig = async () => {
       try {
-        const response = await fetch(`https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/gviz/tq?tqx=out:csv&sheet=Opsional&t=${new Date().getTime()}`);
-        if (!response.ok) {
-          setIsLoadingOptional(false);
-          return;
-        }
-        const csvText = await response.text();
-        const rows = csvText.split('\n').map(row => {
-          let cleanRow = row.trim();
-          if (cleanRow.startsWith('"') && cleanRow.endsWith('"')) {
-            cleanRow = cleanRow.substring(1, cleanRow.length - 1);
-            return cleanRow.split('","');
-          }
-          return cleanRow.split(',');
-        });
+        const SHEET_ID = '1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s';
+        const jsonpData = await fetchSheetJsonp(SHEET_ID, 'Opsional');
+        if (jsonpData && jsonpData.table && jsonpData.table.rows && jsonpData.table.rows.length > 0) {
+          const row0 = jsonpData.table.rows[0];
+          if (row0 && row0.c) {
+            const title = row0.c[0]?.v ? String(row0.c[0].v).trim() : '';
+            const url = row0.c[1]?.v ? String(row0.c[1].v).trim() : '';
+            const statusVal = row0.c[2]?.v;
+            const status = statusVal === true || String(statusVal).toLowerCase() === 'true' || String(statusVal) === '1';
 
-        if (rows.length > 1) {
-          const title = rows[1][0] || '';
-          const url = rows[1][1] || '';
-          const statusStr = (rows[1][2] || '').toLowerCase();
-          const status = statusStr === 'true' || statusStr === '1' || statusStr === 'yes' || statusStr === 'ya' || statusStr === 'aktif';
-
-          if (title && url && status) {
-            fetchOptionalData(url, title);
+            if (title && url && status) {
+              fetchOptionalData(url, title);
+            } else {
+              setIsLoadingOptional(false);
+            }
           } else {
             setIsLoadingOptional(false);
           }
@@ -584,7 +577,6 @@ export default function App() {
           setIsLoadingOptional(false);
         }
       } catch (error) {
-        // Silently fail if optional config is not available
         setIsLoadingOptional(false);
       }
     };
@@ -592,110 +584,29 @@ export default function App() {
     const fetchLayananDigital = async () => {
       try {
         const SHEET_ID = '1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s';
-        // Menambahkan parameter ?t=[timestamp] agar Google Sheets tidak dicache oleh browser mobile / CDP
-        const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Layanan%20Digital&t=${new Date().getTime()}`);
-        if (!res.ok) return;
-        const csv = await res.text();
-        
-        const rows = [];
-        let currentRow = [];
-        let currentCell = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < csv.length; i++) {
-          const char = csv[i];
-          if (char === '"' && csv[i+1] === '"') {
-            currentCell += '"';
-            i++;
-          } else if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            currentRow.push(currentCell);
-            currentCell = '';
-          } else if (char === '\n' && !inQuotes) {
-            currentRow.push(currentCell);
-            rows.push(currentRow);
-            currentRow = [];
-            currentCell = '';
-          } else if (char === '\r' && !inQuotes) {
-            // ignore
-          } else {
-            currentCell += char;
-          }
-        }
-        if (currentRow.length > 0 || currentCell !== '') {
-          currentRow.push(currentCell);
-          rows.push(currentRow);
-        }
+        const jsonpData = await fetchSheetJsonp(SHEET_ID, 'Layanan Digital');
+        if (jsonpData && jsonpData.table && jsonpData.table.rows) {
+          const orderedServices: {name: string, order: number}[] = [];
+          jsonpData.table.rows.forEach((row: any) => {
+            if (!row.c) return;
+            const orderVal = row.c[0] ? (typeof row.c[0].v === 'number' ? row.c[0].v : parseInt(row.c[0].f || row.c[0].v)) : null;
+            const nameVal = row.c[1]?.v ? String(row.c[1].v).trim() : '';
+            if (orderVal !== null && !isNaN(orderVal) && nameVal) {
+              orderedServices.push({ name: nameVal, order: orderVal });
+            }
+          });
 
-        const orderedServices: {name: string, order: number}[] = [];
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const orderStr = row[0]?.replace(/^["']|["']$/g, '').trim();
-          const name = row[1]?.replace(/^["']|["']$/g, '').trim();
-          
-          if (orderStr && name && !isNaN(parseInt(orderStr))) {
-            orderedServices.push({ name, order: parseInt(orderStr) });
+          if (orderedServices.length > 0) {
+            orderedServices.sort((a, b) => a.order - b.order);
+            const newOrder = orderedServices.map(s => s.name);
+            setLayananDigitalOrder(newOrder);
+            localStorage.setItem('layananDigitalOrder', JSON.stringify(newOrder));
           }
         }
-        
-        orderedServices.sort((a, b) => a.order - b.order);
-        const newOrder = orderedServices.map(s => s.name);
-        setLayananDigitalOrder(newOrder);
-        localStorage.setItem('layananDigitalOrder', JSON.stringify(newOrder));
       } catch (error) {
-        console.error("Error fetching Layanan Digital:", error);
+        // Fallback silently if offline or blocked, preserving default/cached order
       } finally {
         setIsLoadingLayananDigital(false);
-      }
-    };
-    
-    const fetchKelulusanProfil = async () => {
-      try {
-        const profilCsvUrl = 'https://docs.google.com/spreadsheets/d/1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s/export?format=csv&gid=243742219';
-        const response = await fetch(`${profilCsvUrl}&t=${new Date().getTime()}`);
-        if (!response.ok) return;
-        const csvText = await response.text();
-        const rows = csvText.split('\n').map(row => {
-          const result = [];
-          let current = '';
-          let inQuotes = false;
-          for (let i = 0; i < row.length; i++) {
-            if (row[i] === '"') {
-              inQuotes = !inQuotes;
-            } else if (row[i] === ',' && !inQuotes) {
-              result.push(current.trim());
-              current = '';
-            } else {
-              current += row[i];
-            }
-          }
-          result.push(current.trim());
-          return result;
-        });
-
-        if (rows.length > 1) {
-          const valName = rows[1][1]?.replace(/"/g, '').trim();
-          if (valName) {
-            localStorage.setItem('kelulusan_schoolName', valName);
-          }
-        }
-
-        if (rows.length > 3) {
-          const valVisi = rows[3][1]?.replace(/"/g, '').trim();
-          if (valVisi) {
-            localStorage.setItem('kelulusan_schoolVisi', valVisi);
-          }
-        }
-
-        if (rows.length > 19) {
-          const valLogo = rows[19][1]?.replace(/"/g, '').trim();
-          if (valLogo && valLogo.startsWith('http')) {
-            localStorage.setItem('kelulusan_logoUrl', valLogo);
-          }
-        }
-      } catch (error) {
-        console.error("Gagal memuat profil kelulusan di belakang layar", error);
       }
     };
     
@@ -703,8 +614,22 @@ export default function App() {
     fetchPrestasi();
     fetchOptionalConfig();
     fetchLayananDigital();
-    fetchKelulusanProfil();
   }, [retryTrigger]);
+
+  // Sync profil data ke localStorage untuk modul Cek Kelulusan tanpa perlu request CSV terpisah
+  useEffect(() => {
+    if (data?.profil) {
+      if (data.profil.nama_sekolah) {
+        localStorage.setItem('kelulusan_schoolName', data.profil.nama_sekolah);
+      }
+      if (data.profil.visi) {
+        localStorage.setItem('kelulusan_schoolVisi', data.profil.visi);
+      }
+      if (data.profil.Logo_Sekolah) {
+        localStorage.setItem('kelulusan_logoUrl', data.profil.Logo_Sekolah);
+      }
+    }
+  }, [data?.profil]);
 
   useEffect(() => {
     if (data?.header) {
