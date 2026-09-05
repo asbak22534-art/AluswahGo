@@ -12,7 +12,7 @@ import { themeConfig } from './theme';
 import { DateTimeAndTA } from './components/DateTimeAndTA';
 import { ActivitySlideshow } from './components/ActivitySlideshow';
 import { NotificationModal, NotifItem } from './components/NotificationComponents';
-import { SidebarItem, ActionItem, NewsCard, BottomNavItem, RunningText } from './components/UIComponents';
+import { SidebarItem, ActionItem, BottomNavItem, RunningText } from './components/UIComponents';
 import { LazyImage } from './components/LazyImage';
 import { GlobalRunningText } from './components/GlobalRunningText';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -109,13 +109,34 @@ const formatImageUrl = (url: string | undefined) => {
   return url;
 };
 
+const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 menit
+
 export default function App() {
   const { theme: t, themeName, setThemeName } = useTheme();
   const { data, isLoading, error, refreshData } = useData();
   const [showNotifs, setShowNotifs] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
   const [currentView, setCurrentView] = useState<'home' | 'quran' | 'doa' | 'kalender' | 'spmb' | 'spmb-form' | 'kritik' | 'program' | 'ekstra' | 'sarpras' | 'news' | 'profil' | 'absensi' | 'affiliasi' | 'yaumiyah' | 'radial' | 'review' | 'review-list' | 'galeri' | 'chatbot' | 'notification-center' | 'kelulusan'>(() => {
-    return (localStorage.getItem('currentView') as any) || 'home';
+    try {
+      const lastActiveStr = localStorage.getItem('lastActiveTime');
+      const savedView = localStorage.getItem('currentView');
+      const now = Date.now();
+
+      if (lastActiveStr) {
+        const lastActive = parseInt(lastActiveStr, 10);
+        if (!isNaN(lastActive) && now - lastActive > INACTIVITY_TIMEOUT_MS) {
+          // Melebihi batas inaktif 15 menit -> reset ke Beranda
+          localStorage.setItem('currentView', 'home');
+          localStorage.setItem('lastActiveTime', now.toString());
+          return 'home';
+        }
+      }
+
+      localStorage.setItem('lastActiveTime', now.toString());
+      return (savedView as any) || 'home';
+    } catch (e) {
+      return 'home';
+    }
   });
   const [showExitModal, setShowExitModal] = useState(false);
   const isExiting = React.useRef(false);
@@ -162,8 +183,89 @@ export default function App() {
   };
 
   useEffect(() => {
-    localStorage.setItem('currentView', currentView);
+    try {
+      localStorage.setItem('currentView', currentView);
+      localStorage.setItem('lastActiveTime', Date.now().toString());
+    } catch (e) {}
   }, [currentView]);
+
+  // Pantau interaksi aktif pengguna untuk memperbarui lastActiveTime (dibatasi tiap 30 detik)
+  useEffect(() => {
+    let lastThrottledTime = Date.now();
+    const handleUserActivity = () => {
+      const now = Date.now();
+      if (now - lastThrottledTime > 30000) {
+        lastThrottledTime = now;
+        try {
+          localStorage.setItem('lastActiveTime', now.toString());
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('pointerdown', handleUserActivity, { passive: true });
+    window.addEventListener('keydown', handleUserActivity, { passive: true });
+    window.addEventListener('touchstart', handleUserActivity, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleUserActivity);
+      window.removeEventListener('keydown', handleUserActivity);
+      window.removeEventListener('touchstart', handleUserActivity);
+    };
+  }, []);
+
+  // Pantau saat aplikasi kembali aktif dari background / layar kunci
+  useEffect(() => {
+    const checkInactivityAndReset = () => {
+      try {
+        const lastActiveStr = localStorage.getItem('lastActiveTime');
+        const now = Date.now();
+        if (lastActiveStr) {
+          const lastActive = parseInt(lastActiveStr, 10);
+          if (!isNaN(lastActive) && now - lastActive > INACTIVITY_TIMEOUT_MS) {
+            // Sudah inaktif > 15 menit -> reset ke Beranda & bersihkan state modal
+            setCurrentView('home');
+            localStorage.setItem('currentView', 'home');
+            setSelectedNews(null);
+            setSelectedPrestasi(null);
+            setSelectedVideo(null);
+            setSelectedNotif(null);
+            setShowNotifs(false);
+            setShowExitModal(false);
+            window.history.replaceState({ view: 'home', appState: true }, '', '/');
+          }
+        }
+        localStorage.setItem('lastActiveTime', now.toString());
+      } catch (e) {}
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkInactivityAndReset();
+      } else {
+        try {
+          localStorage.setItem('lastActiveTime', Date.now().toString());
+        } catch (e) {}
+      }
+    };
+
+    const handlePageShow = () => {
+      checkInactivityAndReset();
+    };
+
+    const handleFocus = () => {
+      checkInactivityAndReset();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   useEffect(() => {
     if (!window.history.state || !window.history.state.appState) {
@@ -200,6 +302,7 @@ export default function App() {
   };
   const [showAllServices, setShowAllServices] = useState(false);
 
+  const { scrollRef: newsRef, setIsPaused: setNewsPaused } = useAutoScroll(3800);
   const { scrollRef: prestasiRef, setIsPaused: setPrestasiPaused } = useAutoScroll(3500);
   const { scrollRef: optionalRef, setIsPaused: setOptionalPaused } = useAutoScroll(4200);
   const { scrollRef: videoRef, setIsPaused: setVideoPaused } = useAutoScroll(4500);
@@ -271,6 +374,11 @@ export default function App() {
   useEffect(() => {
     const handleNotificationClick = () => {
       setCurrentView('home');
+      try {
+        localStorage.setItem('currentView', 'home');
+        localStorage.setItem('lastActiveTime', Date.now().toString());
+        window.history.replaceState({ view: 'home', appState: true }, '', '/');
+      } catch (e) {}
       // Reset juga modal/selected states jika ada yang terbuka agar benar-benar berada di beranda utama
       setSelectedNews(null);
       setSelectedPrestasi(null);
@@ -1190,6 +1298,91 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Kabar Terbaru / News Slide Section */}
+              <div className="py-4 w-full">
+                <div className="flex items-center justify-between mb-4 px-4 md:px-8">
+                  <h3 className="font-bold text-gray-800 text-lg md:text-xl">Kabar Terbaru</h3>
+                  <button 
+                    onClick={() => handleNavigate('news')} 
+                    className={`text-sm ${t.primaryText} font-medium hover:underline transition-colors`}
+                  >
+                    Lihat Semua
+                  </button>
+                </div>
+                
+                <div 
+                  ref={newsRef}
+                  className="flex overflow-x-auto gap-4 pb-4 px-4 md:px-8 snap-x hide-scrollbar items-stretch"
+                  onMouseEnter={() => setNewsPaused(true)}
+                  onMouseLeave={() => setNewsPaused(false)}
+                  onTouchStart={() => setNewsPaused(true)}
+                  onTouchEnd={() => setNewsPaused(false)}
+                >
+                  {isLoadingNews ? (
+                    // Skeleton loading
+                    Array.from({ length: 4 }).map((_, idx) => (
+                      <div key={`news-skeleton-${idx}`} className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start animate-pulse">
+                        <div className="w-full h-36 md:h-44 rounded-xl bg-gray-200 shrink-0"></div>
+                        <div className="flex-1 flex flex-col">
+                          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2 mt-auto pt-1"></div>
+                        </div>
+                      </div>
+                    ))
+                  ) : newsList.length > 0 ? (
+                    newsList.map((news, idx) => (
+                      <div 
+                        key={news.link || `news-${idx}`} 
+                        onClick={() => setSelectedNews(news)}
+                        className="w-[260px] md:w-[300px] max-w-[85vw] shrink-0 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col gap-3 snap-start cursor-pointer hover:shadow-lg transition-all group relative overflow-hidden"
+                      >
+                        <div className="relative w-full h-36 md:h-44 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                          <LazyImage 
+                            src={news.thumbnail || `https://picsum.photos/seed/news${idx}/400/300`} 
+                            alt={news.title} 
+                            containerClassName="w-full h-full"
+                            className="group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute top-2 right-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                            <span>📰</span> Kabar
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </div>
+                        <div className="flex-1 flex flex-col px-1 relative">
+                          <h4 className="font-bold text-gray-800 text-sm md:text-base line-clamp-2 group-hover:text-emerald-600 transition-colors pr-6">
+                            {news.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-auto pt-2 font-medium">
+                            {new Date(news.pubDate.replace(' ', 'T')).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </p>
+                          {news.link && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (navigator.share && news.link) {
+                                  navigator.share({ title: news.title, url: news.link }).catch(console.error);
+                                } else if (news.link) {
+                                  navigator.clipboard.writeText(news.link);
+                                  alert('Tautan disalin ke clipboard!');
+                                }
+                              }}
+                              className="absolute right-0 top-0 p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors opacity-0 group-hover:opacity-100 md:opacity-100"
+                              aria-label="Bagikan"
+                            >
+                              <Share2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-full text-center py-8 text-gray-500 text-sm">
+                      Belum ada kabar terbaru.
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Activity Slideshow */}
               <ActivitySlideshow t={t} />
 
@@ -1422,46 +1615,6 @@ export default function App() {
                   </div>
                 </div>
               )}
-
-              {/* News Section / Kabar Terbaru */}
-              <div className="px-4 md:px-8 py-2 md:py-4 w-full">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-800 text-lg md:text-xl">Kabar Terbaru</h3>
-                  <button onClick={() => handleNavigate('news')} className={`text-sm ${t.primaryText} font-medium hover:underline transition-colors`}>Lihat Semua</button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {isLoadingNews ? (
-                    // Skeleton loading
-                    Array.from({ length: 4 }).map((_, idx) => (
-                      <div key={`news-skeleton-${idx}`} className="bg-white p-2.5 rounded-xl shadow-sm flex gap-3 items-center border border-gray-100 animate-pulse">
-                        <div className="w-16 h-16 rounded-lg bg-gray-200 shrink-0"></div>
-                        <div className="flex-1 min-w-0">
-                          <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                          <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-                          <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-                        </div>
-                      </div>
-                    ))
-                  ) : newsList.length > 0 ? (
-                    newsList.slice(0, 4).map((news, idx) => (
-                      <NewsCard 
-                        key={news.link || `news-${idx}`}
-                        title={news.title}
-                        date={new Date(news.pubDate.replace(' ', 'T')).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        image={news.thumbnail || `https://picsum.photos/seed/news${idx}/400/300`}
-                        index={idx}
-                        onClick={() => setSelectedNews(news)}
-                        link={news.link}
-                      />
-                    ))
-                  ) : (
-                    <div className="col-span-full text-center py-4 text-gray-500 text-sm">
-                      Gagal memuat berita terbaru.
-                    </div>
-                  )}
-                </div>
-              </div>
 
               {/* Minimalist Footer Section */}
               {(isLoading || data?.footer) && (
