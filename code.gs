@@ -73,10 +73,10 @@ function handleChatbot(requestData) {
   const sessionId = requestData.sessionId || generateSessionId();
 
   const cache = CacheService.getScriptCache();
-  // Menggunakan v3 agar merefresh memori cache lama yang mungkin error
-  let systemPrompt = cache.get("chatbot_systemPrompt_v3");
-  let apiKey = cache.get("chatbot_apiKey_v3");
-  let contextString = cache.get("chatbot_contextString_v3");
+  // Menggunakan v4 agar merefresh memori cache lama dan memuat link wa_admin terbaru dari Profil!B22
+  let systemPrompt = cache.get("chatbot_systemPrompt_v4");
+  let apiKey = cache.get("chatbot_apiKey_v4");
+  let contextString = cache.get("chatbot_contextString_v4");
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -102,6 +102,18 @@ function handleChatbot(requestData) {
       if (key === "Link_WA_Admin") linkWa = value;
     }
 
+    // Ambil Link WA Admin dari sheet Profil (key: wa_admin / cell B22) sebagai prioritas utama
+    const sheetProfil = ss.getSheetByName("Profil");
+    if (sheetProfil) {
+      const dataProfil = sheetProfil.getDataRange().getValues();
+      for (let i = 1; i < dataProfil.length; i++) {
+        if (dataProfil[i][0] === "wa_admin" && dataProfil[i][1]) {
+          linkWa = dataProfil[i][1];
+          break;
+        }
+      }
+    }
+
     // Ganti placeholder [LINK_WA_ADMIN] dengan link asli
     systemPrompt = systemPrompt.replace("[LINK_WA_ADMIN]", linkWa);
 
@@ -120,10 +132,10 @@ function handleChatbot(requestData) {
       contextString = "Informasi sekolah belum tersedia.";
     }
 
-    // Simpan ke cache selama 6 jam (21600 detik)
-    cache.put("chatbot_systemPrompt_v3", systemPrompt, 21600);
-    cache.put("chatbot_apiKey_v3", apiKey, 21600);
-    cache.put("chatbot_contextString_v3", contextString, 21600);
+    // Simpan ke cache selama 6 jam (21600 detik) - versi 4 untuk memuat link terbaru dari Profil!B22
+    cache.put("chatbot_systemPrompt_v4", systemPrompt, 21600);
+    cache.put("chatbot_apiKey_v4", apiKey, 21600);
+    cache.put("chatbot_contextString_v4", contextString, 21600);
   }
 
   // Validasi API Key

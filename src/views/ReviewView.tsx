@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Star, Send, Loader2, MessageSquare, User, Users, GraduationCap, ImagePlus, X, CheckCircle2, Camera, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useData } from '../context/DataContext';
+import { fetchSheetJsonp, DEFAULT_SPREADSHEET_ID } from '../utils/googleSheets';
 
 interface ReviewViewProps {
   t: any;
@@ -54,30 +55,7 @@ export const ReviewView: React.FC<ReviewViewProps> = ({ t, onBack, title }) => {
   const [hasReviewed, setHasReviewed] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
-  const SHEET_ID = '1yfluI30DCk3o901wFo7Iknux1hUyN_FtRkjrDOFSA_s';
-
-  const fetchSheetJsonp = (sheetId: string, sheetName: string): Promise<any> => {
-    return new Promise((resolve, reject) => {
-      const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-      const script = document.createElement('script');
-      
-      (window as any)[callbackName] = (data: any) => {
-        resolve(data);
-        delete (window as any)[callbackName];
-        document.body.removeChild(script);
-      };
-      
-      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=responseHandler:${callbackName}&sheet=${sheetName}`;
-      script.src = url;
-      script.onerror = () => {
-        reject(new Error('JSONP request failed'));
-        delete (window as any)[callbackName];
-        document.body.removeChild(script);
-      };
-      
-      document.body.appendChild(script);
-    });
-  };
+  const SHEET_ID = DEFAULT_SPREADSHEET_ID;
 
   useEffect(() => {
     const API_URL = (import.meta as any).env?.VITE_GOOGLE_SCRIPT_URL || "https://script.google.com/macros/s/AKfycby6a5GzCbHy8NjxOVF7OeGWogdLpEJlXarBDeiG_0BlHtoHDpmKbOEaIf1qzcbN2KpD/exec";

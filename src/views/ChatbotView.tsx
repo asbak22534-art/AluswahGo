@@ -18,6 +18,12 @@ export function ChatbotView({ t, onBack }: { t: ThemeConfig, onBack: () => void 
   const { data } = useData();
   const chatbotAvatar = data?.profil?.['avatar_uswah'];
   const chatbotName = "Uswah";
+  const waAdminLink = data?.profil?.['wa_admin'] || 'https://wa.link/yuj7sd';
+
+  const sanitizeWaLink = (content: string) => {
+    if (!content) return content;
+    return content.replace(/https?:\/\/wa\.link\/v56utf/gi, waAdminLink);
+  };
 
   const [sessionId] = useState(() => 'sess_' + Math.random().toString(36).substr(2, 9));
   const [messages, setMessages] = useState<Message[]>([
@@ -116,7 +122,7 @@ export function ChatbotView({ t, onBack }: { t: ThemeConfig, onBack: () => void 
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: responseData.reply || 'Maaf, Uswah tidak dapat merespons saat ini.',
+        text: sanitizeWaLink(responseData.reply || 'Maaf, Uswah tidak dapat merespons saat ini.'),
         sender: 'bot',
         timestamp: new Date()
       };
@@ -193,10 +199,26 @@ export function ChatbotView({ t, onBack }: { t: ThemeConfig, onBack: () => void 
                   <div className="prose prose-sm md:prose-base max-w-none break-words">
                     <ReactMarkdown
                       components={{
-                        a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" className={`font-semibold hover:underline ${t.primaryText} break-all`} />
+                        a: ({node, href, children, ...props}) => {
+                          let finalHref = href || '';
+                          if (finalHref.includes('wa.link/v56utf') || finalHref.includes('v56utf')) {
+                            finalHref = waAdminLink;
+                          }
+                          return (
+                            <a 
+                              {...props} 
+                              href={finalHref}
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className={`font-semibold underline decoration-2 underline-offset-2 hover:opacity-80 transition-all ${t.primaryText} break-all`}
+                            >
+                              {children}
+                            </a>
+                          );
+                        }
                       }}
                     >
-                      {msg.text}
+                      {sanitizeWaLink(msg.text)}
                     </ReactMarkdown>
                   </div>
                 ) : (

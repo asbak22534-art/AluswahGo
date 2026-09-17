@@ -18,7 +18,13 @@ export function fetchSheetJsonp(
 
     const cleanup = () => {
       if (timer) clearTimeout(timer);
-      delete (window as any)[callbackName];
+      // Ganti dengan no-op function alih-alih langsung didelete, agar jika respon script tiba terlambat tidak melempar TypeError / "Script error."
+      (window as any)[callbackName] = () => {};
+      setTimeout(() => {
+        try {
+          delete (window as any)[callbackName];
+        } catch (e) {}
+      }, 60000);
       const el = document.getElementById(callbackName);
       if (el && el.parentNode) {
         el.parentNode.removeChild(el);
@@ -26,13 +32,26 @@ export function fetchSheetJsonp(
     };
 
     (window as any)[callbackName] = (data: any) => {
-      cleanup();
-      resolve(data);
+      try {
+        cleanup();
+      } catch (e) {
+        // ignore
+      }
+      setTimeout(() => {
+        resolve(data);
+      }, 0);
     };
 
-    script.onerror = () => {
-      cleanup();
-      reject(new Error(`Gagal memuat Google Sheet via JSONP (${sheetName || sheetId})`));
+    script.onerror = (e) => {
+      if (e && (e as any).preventDefault) (e as any).preventDefault();
+      try {
+        cleanup();
+      } catch (err) {
+        // ignore
+      }
+      setTimeout(() => {
+        reject(new Error(`Gagal memuat Google Sheet via JSONP (${sheetName || sheetId})`));
+      }, 0);
     };
 
     timer = setTimeout(() => {

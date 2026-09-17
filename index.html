@@ -25,13 +25,45 @@
         // Biarkan browser menampilkan prompt instalasinya secara natural (desktop address bar / mobile pop-up)
         window.deferredPWAInstallPrompt = e;
       });
+
+      // Tangani unhandled script error dari skrip eksternal (cross-origin) agar tidak memicu crash di environment iframe / preview
+      window.onerror = function(message, source, lineno, colno, error) {
+        if (message === 'Script error.' || !source || source === '') {
+          return true; // Menandai error telah tertangani untuk mencegah unhandled exception
+        }
+        return false;
+      };
+
+      window.addEventListener('error', function(e) {
+        if (
+          e.message === 'Script error.' || 
+          (!e.filename && !e.lineno) ||
+          (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK'))
+        ) {
+          e.preventDefault();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          return true;
+        }
+      }, true);
+
+      window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && (e.reason.message === 'Script error.' || String(e.reason).includes('Script error'))) {
+          e.preventDefault();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        }
+      }, true);
     </script>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        // Hanya inisialisasi OneSignal di domain asli untuk menghindari error di environment preview
-        if (window.location.hostname.includes('portal.misitaluswah.sch.id')) {
+      // Hanya muat dan inisialisasi OneSignal di domain resmi untuk menghindari error lintas domain di environment preview/iframe
+      if (window.location.hostname.includes('portal.misitaluswah.sch.id')) {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        const osScript = document.createElement('script');
+        osScript.src = "https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js";
+        osScript.defer = true;
+        osScript.onerror = () => console.warn("Gagal memuat OneSignal SDK");
+        document.head.appendChild(osScript);
+
+        window.OneSignalDeferred.push(async function(OneSignal) {
           try {
             await OneSignal.init({
               appId: "7a7e3936-e5ec-4287-b2ef-90792bb5a567",
@@ -41,31 +73,22 @@
             });
             OneSignal.Slidedown.promptPush();
 
-            // Tambahkan listener agar saat notifikasi diklik, aplikasi akan fokus kembali
             OneSignal.Notifications.addEventListener('click', function(event) {
-              const notificationData = event.notification;
-              console.log("Notifikasi diklik:", notificationData);
-              
-              // Simpan default view ke home di localStorage agar tidak kembali ke halaman terakhir
               try {
                 localStorage.setItem('currentView', 'home');
               } catch (e) {
                 console.error(e);
               }
-              
-              // Trigger event kustom ke React agar langsung diarahkan ke Beranda
               window.dispatchEvent(new CustomEvent('notification-clicked'));
-              
-              // Secara default Android akan membuka URL peluncur. Tapi jika aplikasi sedang running di background, kita paksa fokus.
               window.focus();
             });
           } catch (error) {
             console.error("OneSignal Init Error:", error);
           }
-        } else {
-          console.log("OneSignal dinonaktifkan di environment preview. Fitur ini akan berjalan normal di portal.misitaluswah.sch.id");
-        }
-      });
+        });
+      } else {
+        console.log("OneSignal dinonaktifkan di environment preview/development.");
+      }
     </script>
   </head>
   <body>

@@ -12,19 +12,30 @@ const fetchJsonp = (url: string): Promise<any> => {
     const script = document.createElement('script');
     
     (window as any)[callbackName] = (data: any) => {
-      delete (window as any)[callbackName];
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-      resolve(data);
+      try {
+        (window as any)[callbackName] = () => {};
+        setTimeout(() => {
+          try { delete (window as any)[callbackName]; } catch (e) {}
+        }, 60000);
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      } catch (e) {}
+      setTimeout(() => resolve(data), 0);
     };
 
-    script.onerror = () => {
-      delete (window as any)[callbackName];
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-      reject(new Error('JSONP request failed'));
+    script.onerror = (e) => {
+      if (e && (e as any).preventDefault) (e as any).preventDefault();
+      try {
+        (window as any)[callbackName] = () => {};
+        setTimeout(() => {
+          try { delete (window as any)[callbackName]; } catch (err) {}
+        }, 60000);
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      } catch (err) {}
+      setTimeout(() => reject(new Error('JSONP request failed')), 0);
     };
 
     script.src = `${url}${url.includes('?') ? '&' : '?'}alt=json-in-script&callback=${callbackName}`;

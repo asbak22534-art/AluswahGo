@@ -172,7 +172,7 @@ export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }
             <h3 className="text-xl font-bold text-gray-800 mb-6">Hubungi Kami</h3>
             
             <a 
-              href={`https://wa.me/${spmbWa.number}?text=${encodeURIComponent(spmbWa.message)}`} 
+              href={profil.wa_admin || `https://wa.me/${spmbWa.number}?text=${encodeURIComponent(spmbWa.message)}`} 
               target="_blank" 
               rel="noreferrer"
               className="inline-flex flex-wrap items-center justify-center gap-3 px-4 md:px-8 py-4 bg-green-500 hover:bg-green-600 text-white rounded-2xl font-bold text-base md:text-lg shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 mb-8 w-full md:w-auto"

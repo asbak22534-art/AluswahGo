@@ -233,6 +233,7 @@ export default function App() {
             setShowNotifs(false);
             setShowExitModal(false);
             window.history.replaceState({ view: 'home', appState: true }, '', '/');
+            refreshData?.();
           }
         }
         localStorage.setItem('lastActiveTime', now.toString());
@@ -397,49 +398,68 @@ export default function App() {
       const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
       
       (window as any)[callbackName] = (data: any) => {
-        delete (window as any)[callbackName];
-        const script = document.getElementById(callbackName);
-        if (script) document.body.removeChild(script);
-        
-        if (data && data.feed && data.feed.entry) {
-          const formattedNews = data.feed.entry.map((entry: any) => {
-            // Try to extract first image from content (usually higher quality)
-            let thumbnail = '';
-            const contentHtml = entry.content?.$t || '';
-            const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
-            
-            if (imgMatch && imgMatch[1]) {
-              thumbnail = imgMatch[1];
-            } else if (entry.media$thumbnail?.url) {
-              // Fallback to media$thumbnail if no image in content
-              thumbnail = entry.media$thumbnail.url;
-            }
-            
-            // Fix thumbnail size (Blogger often returns small images, we want a larger one like s1600)
-            if (thumbnail) {
-              // Matches /s72-c/, /w400-h300/, /s320-sn/, etc. right before the filename
-              thumbnail = thumbnail.replace(/\/(s\d+[^/]*|w\d+[^/]*|h\d+[^/]*)\/([^/]+)$/, '/s1600/$2');
-            }
-            
-            return {
-              title: entry.title?.$t || 'Tanpa Judul',
-              pubDate: entry.published?.$t || new Date().toISOString(),
-              thumbnail: thumbnail || '',
-              content: entry.content?.$t || '',
-              author: entry.author?.[0]?.name?.$t || 'Admin',
-              link: entry.link?.find((l: any) => l.rel === 'alternate')?.href || ''
-            };
-          });
-          setNewsList(formattedNews);
+        try {
+          (window as any)[callbackName] = () => {};
+          setTimeout(() => {
+            try { delete (window as any)[callbackName]; } catch (e) {}
+          }, 60000);
+          const script = document.getElementById(callbackName);
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+        } catch (e) {
+          // ignore
         }
-        setIsLoadingNews(false);
+        
+        setTimeout(() => {
+          try {
+            if (data && data.feed && data.feed.entry) {
+              const formattedNews = data.feed.entry.map((entry: any) => {
+                let thumbnail = '';
+                const contentHtml = entry.content?.$t || '';
+                const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
+                
+                if (imgMatch && imgMatch[1]) {
+                  thumbnail = imgMatch[1];
+                } else if (entry.media$thumbnail?.url) {
+                  thumbnail = entry.media$thumbnail.url;
+                }
+                
+                if (thumbnail) {
+                  thumbnail = thumbnail.replace(/\/(s\d+[^/]*|w\d+[^/]*|h\d+[^/]*)\/([^/]+)$/, '/s1600/$2');
+                }
+                
+                return {
+                  title: entry.title?.$t || 'Tanpa Judul',
+                  pubDate: entry.published?.$t || new Date().toISOString(),
+                  thumbnail: thumbnail || '',
+                  content: entry.content?.$t || '',
+                  author: entry.author?.[0]?.name?.$t || 'Admin',
+                  link: entry.link?.find((l: any) => l.rel === 'alternate')?.href || ''
+                };
+              });
+              setNewsList(formattedNews);
+            }
+          } catch (err) {
+            console.error("Error processing news feed:", err);
+          } finally {
+            setIsLoadingNews(false);
+          }
+        }, 0);
       };
 
       const script = document.createElement('script');
       script.id = callbackName;
       script.src = `https://www.misitaluswah.sch.id/feeds/posts/default/-/Artikel?alt=json-in-script&callback=${callbackName}`;
-      script.onerror = () => {
-        console.error("Gagal mengambil berita: JSONP request failed");
+      script.onerror = (e) => {
+        if (e && (e as any).preventDefault) (e as any).preventDefault();
+        try {
+          (window as any)[callbackName] = () => {};
+          setTimeout(() => {
+            try { delete (window as any)[callbackName]; } catch (err) {}
+          }, 60000);
+          const s = document.getElementById(callbackName);
+          if (s && s.parentNode) s.parentNode.removeChild(s);
+        } catch (err) {}
+        console.warn("Gagal mengambil berita: JSONP request failed");
         setIsLoadingNews(false);
       };
       document.body.appendChild(script);
@@ -449,46 +469,65 @@ export default function App() {
       const callbackName = 'jsonp_callback_prestasi_' + Math.round(100000 * Math.random());
       
       (window as any)[callbackName] = (data: any) => {
-        delete (window as any)[callbackName];
-        const script = document.getElementById(callbackName);
-        if (script) document.body.removeChild(script);
+        try {
+          (window as any)[callbackName] = () => {};
+          setTimeout(() => {
+            try { delete (window as any)[callbackName]; } catch (e) {}
+          }, 60000);
+          const script = document.getElementById(callbackName);
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+        } catch (e) {}
         
-        if (data && data.feed && data.feed.entry) {
-          const formattedPrestasi = data.feed.entry.map((entry: any) => {
-            // Try to extract first image from content (usually higher quality)
-            let thumbnail = '';
-            const contentHtml = entry.content?.$t || '';
-            const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
-            
-            if (imgMatch && imgMatch[1]) {
-              thumbnail = imgMatch[1];
-            } else if (entry.media$thumbnail?.url) {
-              // Fallback to media$thumbnail if no image in content
-              thumbnail = entry.media$thumbnail.url;
+        setTimeout(() => {
+          try {
+            if (data && data.feed && data.feed.entry) {
+              const formattedPrestasi = data.feed.entry.map((entry: any) => {
+                let thumbnail = '';
+                const contentHtml = entry.content?.$t || '';
+                const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
+                
+                if (imgMatch && imgMatch[1]) {
+                  thumbnail = imgMatch[1];
+                } else if (entry.media$thumbnail?.url) {
+                  thumbnail = entry.media$thumbnail.url;
+                }
+                
+                if (thumbnail) {
+                  thumbnail = thumbnail.replace(/\/(s\d+[^/]*|w\d+[^/]*|h\d+[^/]*)\/([^/]+)$/, '/s1600/$2');
+                }
+                return {
+                  title: entry.title?.$t || 'Tanpa Judul',
+                  pubDate: entry.published?.$t || new Date().toISOString(),
+                  thumbnail: thumbnail || '',
+                  content: entry.content?.$t || '',
+                  author: entry.author?.[0]?.name?.$t || 'Admin',
+                  link: entry.link?.find((l: any) => l.rel === 'alternate')?.href || ''
+                };
+              });
+              setPrestasiList(formattedPrestasi);
             }
-            
-            if (thumbnail) {
-              thumbnail = thumbnail.replace(/\/(s\d+[^/]*|w\d+[^/]*|h\d+[^/]*)\/([^/]+)$/, '/s1600/$2');
-            }
-            return {
-              title: entry.title?.$t || 'Tanpa Judul',
-              pubDate: entry.published?.$t || new Date().toISOString(),
-              thumbnail: thumbnail || '',
-              content: entry.content?.$t || '',
-              author: entry.author?.[0]?.name?.$t || 'Admin',
-              link: entry.link?.find((l: any) => l.rel === 'alternate')?.href || ''
-            };
-          });
-          setPrestasiList(formattedPrestasi);
-        }
-        setIsLoadingPrestasi(false);
+          } catch (err) {
+            console.error("Error processing prestasi feed:", err);
+          } finally {
+            setIsLoadingPrestasi(false);
+          }
+        }, 0);
       };
 
       const script = document.createElement('script');
       script.id = callbackName;
       script.src = `https://www.misitaluswah.sch.id/feeds/posts/default/-/Prestasi?alt=json-in-script&callback=${callbackName}`;
-      script.onerror = () => {
-        console.error("Gagal mengambil prestasi: JSONP request failed");
+      script.onerror = (e) => {
+        if (e && (e as any).preventDefault) (e as any).preventDefault();
+        try {
+          (window as any)[callbackName] = () => {};
+          setTimeout(() => {
+            try { delete (window as any)[callbackName]; } catch (err) {}
+          }, 60000);
+          const s = document.getElementById(callbackName);
+          if (s && s.parentNode) s.parentNode.removeChild(s);
+        } catch (err) {}
+        console.warn("Gagal mengambil prestasi: JSONP request failed");
         setIsLoadingPrestasi(false);
       };
       document.body.appendChild(script);
@@ -507,47 +546,69 @@ export default function App() {
         : `${feedUrl}?alt=json-in-script&callback=${callbackName}`;
 
       (window as any)[callbackName] = (data: any) => {
-        delete (window as any)[callbackName];
-        const script = document.getElementById(callbackName);
-        if (script) document.body.removeChild(script);
+        try {
+          (window as any)[callbackName] = () => {};
+          setTimeout(() => {
+            try { delete (window as any)[callbackName]; } catch (e) {}
+          }, 60000);
+          const script = document.getElementById(callbackName);
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+        } catch (e) {}
         
-        if (data && data.feed && data.feed.entry) {
-          const formattedData = data.feed.entry.map((entry: any) => {
-            let thumbnail = '';
-            const contentHtml = entry.content?.$t || '';
-            const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
-            
-            if (imgMatch && imgMatch[1]) {
-              thumbnail = imgMatch[1];
-            } else if (entry.media$thumbnail?.url) {
-              thumbnail = entry.media$thumbnail.url;
+        setTimeout(() => {
+          try {
+            if (data && data.feed && data.feed.entry) {
+              const formattedData = data.feed.entry.map((entry: any) => {
+                let thumbnail = '';
+                const contentHtml = entry.content?.$t || '';
+                const imgMatch = contentHtml.match(/<img[^>]+src="([^">]+)"/);
+                
+                if (imgMatch && imgMatch[1]) {
+                  thumbnail = imgMatch[1];
+                } else if (entry.media$thumbnail?.url) {
+                  thumbnail = entry.media$thumbnail.url;
+                }
+                
+                if (thumbnail) {
+                  thumbnail = thumbnail.replace(/\/(s\d+[^/]*|w\d+[^/]*|h\d+[^/]*)\/([^/]+)$/, '/s1600/$2');
+                }
+                
+                return {
+                  title: entry.title?.$t || 'Tanpa Judul',
+                  pubDate: entry.published?.$t || new Date().toISOString(),
+                  thumbnail: thumbnail || '',
+                  content: entry.content?.$t || '',
+                  author: entry.author?.[0]?.name?.$t || 'Admin',
+                  link: entry.link?.find((l: any) => l.rel === 'alternate')?.href || ''
+                };
+              });
+              setOptionalSection({ title, url: sourceUrl, status: true, data: formattedData });
+            } else {
+              setOptionalSection({ title, url: sourceUrl, status: true, data: [] });
             }
-            
-            if (thumbnail) {
-              thumbnail = thumbnail.replace(/\/(s\d+[^/]*|w\d+[^/]*|h\d+[^/]*)\/([^/]+)$/, '/s1600/$2');
-            }
-            
-            return {
-              title: entry.title?.$t || 'Tanpa Judul',
-              pubDate: entry.published?.$t || new Date().toISOString(),
-              thumbnail: thumbnail || '',
-              content: entry.content?.$t || '',
-              author: entry.author?.[0]?.name?.$t || 'Admin',
-              link: entry.link?.find((l: any) => l.rel === 'alternate')?.href || ''
-            };
-          });
-          setOptionalSection({ title, url: sourceUrl, status: true, data: formattedData });
-        } else {
-          setOptionalSection({ title, url: sourceUrl, status: true, data: [] });
-        }
-        setIsLoadingOptional(false);
+          } catch (err) {
+            console.error("Error processing optional feed:", err);
+            setOptionalSection({ title, url: sourceUrl, status: true, data: [] });
+          } finally {
+            setIsLoadingOptional(false);
+          }
+        }, 0);
       };
 
       const script = document.createElement('script');
       script.id = callbackName;
       script.src = finalUrl;
-      script.onerror = () => {
-        console.error("Gagal mengambil data opsional");
+      script.onerror = (e) => {
+        if (e && (e as any).preventDefault) (e as any).preventDefault();
+        try {
+          (window as any)[callbackName] = () => {};
+          setTimeout(() => {
+            try { delete (window as any)[callbackName]; } catch (err) {}
+          }, 60000);
+          const s = document.getElementById(callbackName);
+          if (s && s.parentNode) s.parentNode.removeChild(s);
+        } catch (err) {}
+        console.warn("Gagal mengambil data opsional");
         setIsLoadingOptional(false);
       };
       document.body.appendChild(script);
@@ -1571,7 +1632,7 @@ export default function App() {
                       <div className="flex flex-col items-center md:items-end gap-4 w-full">
                         {/* CTA Button */}
                         <a 
-                          href={`https://wa.me/${data.footer.no_wa}?text=${encodeURIComponent(data.footer.pesan_wa || 'Halo')}`}
+                          href={data?.profil?.wa_admin || `https://wa.me/${data.footer.no_wa}?text=${encodeURIComponent(data.footer.pesan_wa || 'Halo')}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`flex items-center justify-center gap-2 px-5 py-2.5 ${t.primaryBg} text-white rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 whitespace-nowrap`}
