@@ -19,6 +19,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTheme } from './context/ThemeContext';
 import { useData } from './context/DataContext';
 import { getSpmbExternalUrl } from './utils/spmbUtils';
+import { getRadialExternalUrl } from './utils/radialUtils';
 import { fetchSheetJsonp } from './utils/googleSheets';
 import { AbsensiView } from './views/AbsensiView';
 import { AffiliasiView } from './views/AffiliasiView';
@@ -1816,7 +1817,13 @@ export default function App() {
                   {currentView === 'absensi' && <AbsensiView t={t} title={getServiceTitle('absensi')} onBack={handleBack} />}
                   {currentView === 'affiliasi' && <AffiliasiView t={t} title={getServiceTitle('affiliasi')} onBack={handleBack} />}
                   {currentView === 'yaumiyah' && <YaumiyahView t={t} title={getServiceTitle('yaumiyah')} onBack={handleBack} />}
-                  {currentView === 'radial' && <RadialView t={t} onBack={handleBack} />}
+                  {currentView === 'radial' && (
+                    <RadialView 
+                      t={t} 
+                      onBack={handleBack} 
+                      url={getRadialExternalUrl(data?.profil) || undefined} 
+                    />
+                  )}
                   {currentView === 'review' && <ReviewView t={t} title={getServiceTitle('review')} onBack={handleBack} />}
                   {currentView === 'review-list' && <ReviewListView t={t} data={data?.review || []} onBack={handleBack} />}
                   {currentView === 'galeri' && <GaleriView t={t} onBack={handleBack} />}
