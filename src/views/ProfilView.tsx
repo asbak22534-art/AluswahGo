@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, MapPin, Target, Users, BookOpen, Award, GraduationCap, Globe, Facebook, Instagram, Youtube, Video } from 'lucide-react';
+import { ArrowLeft, MapPin, Target, Users, BookOpen, Award, GraduationCap, Globe, Facebook, Instagram, Youtube, Video, Sparkles, Info } from 'lucide-react';
 import { ThemeConfig } from '../types';
 import { useData } from '../context/DataContext';
 import { fetchSheetJsonp, DEFAULT_SPREADSHEET_ID } from '../utils/googleSheets';
+import { APP_VERSION_CONFIG } from '../version';
+import { VersionModal } from '../components/VersionModal';
 
 export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }) {
   const { data, isLoading } = useData();
   const profil = data?.profil || {};
+  const [showVersionModal, setShowVersionModal] = useState(false);
   
   const [spmbWa, setSpmbWa] = useState<{number: string, message: string}>({
     number: profil.wa || '6282244270636',
@@ -200,8 +203,51 @@ export function ProfilView({ t, onBack }: { t: ThemeConfig, onBack: () => void }
             </div>
           </div>
 
+          {/* Version & App Info Section */}
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4 text-center sm:text-left">
+                <div className={`w-14 h-14 rounded-2xl ${t.primaryLightBg} flex items-center justify-center shrink-0 ${t.primaryText} shadow-inner`}>
+                  <Sparkles size={28} />
+                </div>
+                <div>
+                  <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <h3 className="text-xl font-bold text-gray-800">AluswahGo</h3>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      v{APP_VERSION_CONFIG.version}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 font-medium mt-1">
+                    Portal Digital MIS IT Al Uswah • Rilis {APP_VERSION_CONFIG.buildDate}
+                  </p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    Status: <span className="text-emerald-600 font-bold">Versi Terbaru & Terverifikasi</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-2.5 w-full sm:w-auto">
+                <button
+                  onClick={() => setShowVersionModal(true)}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 ${t.primaryBg} hover:opacity-95`}
+                >
+                  <Info size={14} />
+                  <span>Detail Versi & Catatan Rilis</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
+
+      {/* Version Details Modal */}
+      <VersionModal 
+        isOpen={showVersionModal} 
+        onClose={() => setShowVersionModal(false)} 
+        t={t} 
+      />
     </motion.div>
   );
 }

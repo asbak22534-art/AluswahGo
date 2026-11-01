@@ -30,6 +30,8 @@ import { VideoModal } from './components/VideoModal';
 import { ReviewSection } from './components/ReviewSection';
 import { ChatbotView } from './views/ChatbotView';
 import ReloadPrompt from './components/ReloadPrompt';
+import { APP_VERSION_CONFIG } from './version';
+import { VersionModal } from './components/VersionModal';
 
 // Lazy load views
 const QuranView = React.lazy(() => import('./views/QuranView').then(m => ({ default: m.QuranView })));
@@ -141,6 +143,7 @@ export default function App() {
     }
   });
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
   const isExiting = React.useRef(false);
 
   // Bagian Instalasi PWA
@@ -987,6 +990,21 @@ export default function App() {
               <SidebarItem icon={<User size={20} />} label="Profil" active={currentView === 'profil'} t={t} onClick={() => handleNavigate('profil')} />
               <SidebarItem icon={<MessageCircle size={20} />} label="Tanya AI" active={currentView === 'chatbot'} t={t} onClick={() => handleNavigate('chatbot')} />
             </nav>
+
+            {/* Sidebar Version Info */}
+            <div className="p-4 border-t border-gray-100 flex flex-col gap-1.5 mt-auto bg-gray-50/50">
+              <button
+                onClick={() => setShowVersionModal(true)}
+                className="flex items-center justify-between p-2 rounded-xl bg-white border border-gray-200/70 hover:border-teal-300 hover:bg-teal-50/50 transition-all text-xs text-gray-700 hover:text-teal-800 shadow-2xs active:scale-95"
+                title="Lihat Detail Versi & Catatan Rilis"
+              >
+                <div className="flex items-center gap-1.5 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>v{APP_VERSION_CONFIG.version}</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-medium">Info Versi</span>
+              </button>
+            </div>
           </aside>
         )}
 
@@ -1053,6 +1071,16 @@ export default function App() {
                   <Download size={18} className="animate-bounce" />
                 </button>
               )}
+
+              {/* Version Badge (Clickable) */}
+              <button
+                onClick={() => setShowVersionModal(true)}
+                title={`AluswahGo v${APP_VERSION_CONFIG.version} (Klik untuk info rilis)`}
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-800 text-[11px] font-bold border border-teal-200/80 transition-all active:scale-95 shadow-2xs"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>v{APP_VERSION_CONFIG.version}</span>
+              </button>
 
               {/* Theme Toggle */}
               <button 
@@ -1677,7 +1705,17 @@ export default function App() {
                           <MapPin size={14} className="shrink-0 mt-0.5 md:mt-0" />
                           <span className="flex-1 leading-relaxed">{data?.footer?.alamat || data?.profil?.alamat}</span>
                         </div>
-                        <p className="shrink-0 w-full text-center md:text-right md:w-auto">© {new Date().getFullYear()} {data?.header?.judul || "MIS IT Al Uswah"}.</p>
+                        <div className="flex items-center gap-2.5 shrink-0 w-full justify-center md:justify-end md:w-auto">
+                          <p>© {new Date().getFullYear()} {data?.header?.judul || "MIS IT Al Uswah"}.</p>
+                          <button
+                            onClick={() => setShowVersionModal(true)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-50 hover:bg-teal-100 text-teal-700 hover:text-teal-900 font-bold border border-teal-200/60 transition-colors"
+                            title="Klik untuk melihat Detail Versi & Pembaruan"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span>v{APP_VERSION_CONFIG.version}</span>
+                          </button>
+                        </div>
                       </>
                     )}
                   </div>
@@ -1837,6 +1875,13 @@ export default function App() {
         </AnimatePresence>
 
         <ReloadPrompt />
+
+        {/* Global Version Modal */}
+        <VersionModal 
+          isOpen={showVersionModal} 
+          onClose={() => setShowVersionModal(false)} 
+          t={t} 
+        />
       </div>
     </div>
   );
