@@ -1072,16 +1072,6 @@ export default function App() {
                 </button>
               )}
 
-              {/* Version Badge (Clickable) */}
-              <button
-                onClick={() => setShowVersionModal(true)}
-                title={`AluswahGo v${APP_VERSION_CONFIG.version} (Klik untuk info rilis)`}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-800 text-[11px] font-bold border border-teal-200/80 transition-all active:scale-95 shadow-2xs"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>v{APP_VERSION_CONFIG.version}</span>
-              </button>
-
               {/* Theme Toggle */}
               <button 
                 onClick={toggleTheme}
@@ -1632,96 +1622,98 @@ export default function App() {
               )}
 
               {/* Minimalist Footer Section */}
-              {(isLoading || data?.footer) && (
-                <footer className="bg-white border-t border-gray-200 mt-auto pt-10 pb-24 md:pb-10 px-6 md:px-12 w-full overflow-hidden">
-                  {isLoading ? (
-                    <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full animate-pulse">
-                      <div className="flex flex-col items-center md:items-start w-full">
-                        <div className="h-6 bg-gray-200 rounded w-48 mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-64"></div>
-                      </div>
-                      <div className="flex flex-col items-center md:items-end gap-4 w-full">
-                        <div className="h-10 bg-gray-200 rounded-full w-40"></div>
-                        <div className="flex gap-3">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                          <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                          <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                        </div>
+              <footer className="bg-white border-t border-gray-200 mt-auto pt-8 pb-32 lg:pb-12 px-6 md:px-12 w-full overflow-hidden">
+                {isLoading ? (
+                  <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full animate-pulse">
+                    <div className="flex flex-col items-center md:items-start w-full">
+                      <div className="h-6 bg-gray-200 rounded w-48 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-64"></div>
+                    </div>
+                    <div className="flex flex-col items-center md:items-end gap-4 w-full">
+                      <div className="h-10 bg-gray-200 rounded-full w-40"></div>
+                      <div className="flex gap-3">
+                        <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                        <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                        <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full">
-                      <div className="flex flex-col items-center md:items-start text-center md:text-left w-full">
-                        <h3 className="text-lg font-bold text-gray-800">{data?.header?.judul || "MIS IT Al Uswah"}</h3>
-                        <p className="text-gray-500 text-sm mt-1 max-w-sm">
-                          {data?.footer?.teks_cta || "Mencetak generasi Qur'ani, Mandiri, dan Berprestasi."}
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col items-center md:items-end gap-4 w-full">
-                        {/* CTA Button */}
-                        <a 
-                          href={data?.profil?.wa_admin || `https://wa.me/${data.footer.no_wa}?text=${encodeURIComponent(data.footer.pesan_wa || 'Halo')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`flex items-center justify-center gap-2 px-5 py-2.5 ${t.primaryBg} text-white rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 whitespace-nowrap`}
-                        >
-                          <MessageCircle size={18} />
-                          Hubungi Kami
-                        </a>
-
-                        {/* Social Media */}
-                        <div className="flex items-center gap-3">
-                          {data.footer.facebook && (
-                            <a href={data.footer.facebook} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600 transition-colors">
-                              <Facebook size={20} />
-                            </a>
-                          )}
-                          {data.footer.instagram && (
-                            <a href={data.footer.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-600 transition-colors">
-                              <Instagram size={20} />
-                            </a>
-                          )}
-                          {data.footer.youtube && (
-                            <a href={data.footer.youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-600 transition-colors">
-                              <Youtube size={20} />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Address & Copyright */}
-                  <div className="max-w-[1600px] mx-auto mt-8 pt-6 border-t border-gray-50 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-400 w-full">
-                    {isLoading ? (
-                      <>
-                        <div className="h-4 bg-gray-200 rounded w-full md:w-1/2 animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-start md:items-center gap-2 text-left w-full md:w-auto">
-                          <MapPin size={14} className="shrink-0 mt-0.5 md:mt-0" />
-                          <span className="flex-1 leading-relaxed">{data?.footer?.alamat || data?.profil?.alamat}</span>
-                        </div>
-                        <div className="flex items-center gap-2.5 shrink-0 w-full justify-center md:justify-end md:w-auto">
-                          <p>© {new Date().getFullYear()} {data?.header?.judul || "MIS IT Al Uswah"}.</p>
-                          <button
-                            onClick={() => setShowVersionModal(true)}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-50 hover:bg-teal-100 text-teal-700 hover:text-teal-900 font-bold border border-teal-200/60 transition-colors"
-                            title="Klik untuk melihat Detail Versi & Pembaruan"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            <span>v{APP_VERSION_CONFIG.version}</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
                   </div>
-                </footer>
-              )}
-              {(!isLoading && !data?.footer) && <div className="h-28 md:h-8 shrink-0" />}
+                ) : data?.footer ? (
+                  <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 w-full">
+                    <div className="flex flex-col items-center md:items-start text-center md:text-left w-full">
+                      <h3 className="text-lg font-bold text-gray-800">{data?.header?.judul || "MIS IT Al Uswah"}</h3>
+                      <p className="text-gray-500 text-sm mt-1 max-w-sm">
+                        {data?.footer?.teks_cta || "Mencetak generasi Qur'ani, Mandiri, dan Berprestasi."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col items-center md:items-end gap-4 w-full">
+                      {/* CTA Button */}
+                      <a 
+                        href={data?.profil?.wa_admin || `https://wa.me/${data.footer.no_wa}?text=${encodeURIComponent(data.footer.pesan_wa || 'Halo')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center justify-center gap-2 px-5 py-2.5 ${t.primaryBg} text-white rounded-full text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 whitespace-nowrap`}
+                      >
+                        <MessageCircle size={18} />
+                        Hubungi Kami
+                      </a>
+
+                      {/* Social Media */}
+                      <div className="flex items-center gap-3">
+                        {data.footer.facebook && (
+                          <a href={data.footer.facebook} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600 transition-colors">
+                            <Facebook size={20} />
+                          </a>
+                        )}
+                        {data.footer.instagram && (
+                          <a href={data.footer.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-600 transition-colors">
+                            <Instagram size={20} />
+                          </a>
+                        )}
+                        {data.footer.youtube && (
+                          <a href={data.footer.youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-600 transition-colors">
+                            <Youtube size={20} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Address, Copyright & Prominent Version Badge */}
+                <div className={`max-w-[1600px] mx-auto ${data?.footer ? 'mt-8 pt-6 border-t border-gray-100' : ''} flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500 w-full`}>
+                  {isLoading ? (
+                    <>
+                      <div className="h-4 bg-gray-200 rounded w-full md:w-1/2 animate-pulse"></div>
+                      <div className="h-8 bg-gray-200 rounded-full w-36 animate-pulse"></div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-start md:items-center gap-2 text-left w-full md:w-auto">
+                        <MapPin size={15} className="shrink-0 mt-0.5 md:mt-0 text-teal-600" />
+                        <span className="flex-1 leading-relaxed text-gray-500">
+                          {data?.footer?.alamat || data?.profil?.alamat || "MIS IT Al Uswah"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 shrink-0 w-full justify-center md:justify-end md:w-auto">
+                        <p className="text-gray-500 font-medium">© {new Date().getFullYear()} {data?.header?.judul || "MIS IT Al Uswah"}.</p>
+                        <button
+                          onClick={() => setShowVersionModal(true)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer"
+                          title="Klik untuk melihat Detail Versi & Catatan Pembaruan"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>v{APP_VERSION_CONFIG.version}</span>
+                          <span className="text-[10px] font-medium text-emerald-300 bg-emerald-950/70 px-1.5 py-0.5 rounded-full">
+                            Terbaru
+                          </span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </footer>
 
             </div>
             )}

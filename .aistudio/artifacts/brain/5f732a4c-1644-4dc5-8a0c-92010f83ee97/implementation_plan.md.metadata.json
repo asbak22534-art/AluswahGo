@@ -1,6 +1,6 @@
 {
-  "summary":  "Rencana audit mendalam dan implementasi perbaikan masalah update/cache pada RADIAL:\n1. Analisis teknis penyebab scroll-down/pull-to-refresh gagal memperbarui iframe cross-origin.\n2. Penambahan mekanisme cache-buster otomatis (?t=timestamp) setiap kali halaman RADIAL dimuat.\n3. Penambahan tombol micro-floating minimalis dan elegan (Buka di Browser Luar & Muat Ulang Paksa) tanpa merusak tampilan layar penuh.\n4. Uji verifikasi dan kompilasi aplikasi.",
-  "updatedAt":  "2026-11-01T07:11:37.553113254Z",
+  "summary":  "Rencana implementasi dan laporan teknis: pemindahan badge versi dari header ke footer dengan kontras tinggi dan ruang aman di atas navigasi bawah ponsel.",
+  "updatedAt":  "2026-11-01T08:58:52.510159294Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

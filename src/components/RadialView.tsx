@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
 import { ThemeConfig } from '../types';
 
 interface RadialViewProps {
@@ -18,11 +18,12 @@ const DEFAULT_RADIAL_URL = 'https://radial.misitaluswah.sch.id/';
 function appendCacheBuster(rawUrl: string, timestamp: number): string {
   try {
     const parsed = new URL(rawUrl);
-    parsed.searchParams.set('_v', String(timestamp));
+    parsed.searchParams.set('v', String(timestamp));
+    parsed.searchParams.set('_t', String(timestamp));
     return parsed.toString();
   } catch {
     const sep = rawUrl.includes('?') ? '&' : '?';
-    return `${rawUrl}${sep}_v=${timestamp}`;
+    return `${rawUrl}${sep}v=${timestamp}&_t=${timestamp}`;
   }
 }
 
@@ -73,6 +74,18 @@ export default function RadialView({ t, url }: RadialViewProps) {
                   Sinkronisasi timestamp: {cacheBuster}
                 </p>
               </div>
+
+              <div className="pt-2">
+                <a
+                  href={currentIframeSrc}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 text-xs font-semibold transition-colors shadow-2xs"
+                >
+                  <ExternalLink size={13} />
+                  <span>Buka di Browser Luar</span>
+                </a>
+              </div>
             </div>
           </motion.div>
         )}
@@ -80,6 +93,7 @@ export default function RadialView({ t, url }: RadialViewProps) {
 
       {/* Embedded RADIAL iframe Layar Penuh Edge-to-Edge dengan URL Cache-Busted */}
       <iframe
+        id="radial-iframe"
         key={`radial-iframe-${cacheBuster}`}
         src={currentIframeSrc}
         title="RADIAL — Raport Digital MIS IT Al Uswah"

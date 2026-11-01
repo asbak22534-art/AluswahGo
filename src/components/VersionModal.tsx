@@ -102,7 +102,7 @@ export function VersionModal({ isOpen, onClose, t }: VersionModalProps) {
             {/* Status Penjelasan Cache & RADIAL */}
             <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 flex gap-3 text-amber-900 text-xs leading-relaxed">
               <Info size={20} className="shrink-0 text-amber-600 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <p className="font-bold text-amber-950 mb-1">
                   Mekanisme Pembaruan Halaman RADIAL (Raport Digital)
                 </p>
@@ -110,8 +110,20 @@ export function VersionModal({ isOpen, onClose, t }: VersionModalProps) {
                   Halaman <strong>RADIAL</strong> berjalan di dalam iframe domain mandiri (<code className="bg-amber-100/70 px-1 py-0.5 rounded text-[10px]">radial.misitaluswah.sch.id</code>). Standar keamanan browser memisahkan penyimpanan cache dan Service Worker antar domain.
                 </p>
                 <p className="text-amber-800 mt-1.5">
-                  Oleh karena itu, sistem Al Uswah Go secara otomatis menyematkan <em>cache-buster</em> (sinkronisasi timestamp) setiap kali menu RADIAL dibuka sehingga selalu memuat berkas terbaru tanpa perlu tombol tambahan di layar.
+                  Sistem Al Uswah Go secara otomatis menyematkan <em>cache-buster</em> setiap kali menu dibuka. Jika di HP Anda masih menampilkan versi lama akibat cache bawaan Chrome/Safari, Anda dapat membuka langsung di peramban luar atau menghapus data situs tersebut di Chrome.
                 </p>
+                <div className="mt-3 pt-2.5 border-t border-amber-200/80 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[11px] text-amber-900 font-medium">Buka langsung di Chrome/Safari:</span>
+                  <a
+                    href="https://radial.misitaluswah.sch.id/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors shadow-2xs"
+                  >
+                    <ExternalLink size={13} />
+                    <span>Buka RADIAL di Browser Luar</span>
+                  </a>
+                </div>
               </div>
             </div>
 
