@@ -2,38 +2,55 @@ import { useEffect } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 /**
- * ReloadPrompt: Menangani siklus hidup Service Worker secara hening (silent) di latar belakang
- * tanpa menampilkan toast atau pop-up yang mengganggu pengguna.
+ * ReloadPrompt: Menangani siklus hidup Service Worker secara pasif di latar belakang
+ * tanpa memicu window.location.reload() otomatis yang menyebabkan layar berkedip (flicker),
+ * serta menonaktifkan SW di dalam iframe preview (AI Studio / dev).
  */
 export default function ReloadPrompt() {
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
+  useRegisterSW({
+    immediate: false,
     onRegistered(r) {
-      if (r) {
-        // Cek update di background secara berkala (setiap 30 menit)
-        const intervalId = setInterval(() => {
-          r.update().catch(() => {});
-        }, 30 * 60 * 1000);
+      if (!r) return;
 
-        window.addEventListener('beforeunload', () => {
-          clearInterval(intervalId);
-        });
+      // Jangan jalankan auto-check agresif di dalam iframe preview AI Studio
+      const isPreviewIframe = (() => {
+        try {
+          return window.self !== window.top || window.location.hostname.includes('.run.app');
+        } catch {
+          return true;
+        }
+      })();
+
+      if (isPreviewIframe) {
+        r.unregister().catch(() => {});
+        return;
       }
+
+      // Cek update di background secara berkala (setiap 60 menit) tanpa memaksa reload halaman aktif
+      const intervalId = setInterval(() => {
+        r.update().catch(() => {});
+      }, 60 * 60 * 1000);
+
+      window.addEventListener('beforeunload', () => {
+        clearInterval(intervalId);
+      });
     },
     onRegisterError(error) {
       console.log('SW registration error:', error);
     },
   });
 
-  // Saat versi baru terdeteksi, perbarui otomatis di latar belakang tanpa mengganggu UI
+  // Bersihkan SW lama jika berjalan di dalam preview AI Studio (.run.app) agar tidak terjadi loop reload
   useEffect(() => {
-    if (needRefresh) {
-      updateServiceWorker(true).catch(() => {});
+    const isPreviewHost = window.location.hostname.includes('.run.app');
+    if (isPreviewHost && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const reg of registrations) {
+          reg.unregister().catch(() => {});
+        }
+      }).catch(() => {});
     }
-  }, [needRefresh, updateServiceWorker]);
+  }, []);
 
-  // Tidak ada UI pop-up yang mengganggu layar pengguna
   return null;
 }

@@ -12,7 +12,7 @@ interface RadialViewProps {
 const DEFAULT_RADIAL_URL = 'https://radial.misitaluswah.sch.id/';
 
 /**
- * Membubuhkan parameter cache-buster (_v=timestamp) ke URL agar browser
+ * Membubuhkan parameter cache-buster (v=timestamp&_t=timestamp) ke URL agar browser
  * tidak menyajikan halaman/asset versi lama dari memori atau disk cache.
  */
 function appendCacheBuster(rawUrl: string, timestamp: number): string {
@@ -28,24 +28,27 @@ function appendCacheBuster(rawUrl: string, timestamp: number): string {
 }
 
 export default function RadialView({ t, url }: RadialViewProps) {
-  // Generate timestamp unik setiap kali komponen Radial dibuka
-  const [cacheBuster] = useState<number>(() => Date.now());
-  const [isLoading, setIsLoading] = useState(true);
+  // Kunci URL & timestamp sekali saja saat komponen dipasang (mount)
+  // agar pembaruan data background (DataContext) tidak memicu reload ulang / kedipan (flicker) pada iframe
+  const [sessionConfig] = useState(() => {
+    const ts = Date.now();
+    const base = (url && url.trim()) ? url.trim() : DEFAULT_RADIAL_URL;
+    return {
+      timestamp: ts,
+      iframeSrc: appendCacheBuster(base, ts),
+    };
+  });
 
-  const targetBaseUrl = url || DEFAULT_RADIAL_URL;
-  // Iframe disematkan cache-buster otomatis setiap kali dibuka
-  const currentIframeSrc = appendCacheBuster(targetBaseUrl, cacheBuster);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Watchdog timeout 8 detik agar overlay loading tidak macet jika jaringan lambat
   useEffect(() => {
-    setIsLoading(true);
-
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 8000);
 
     return () => clearTimeout(timer);
-  }, [cacheBuster, targetBaseUrl]);
+  }, []);
 
   return (
     <div className="fixed inset-0 w-full h-[100dvh] bg-white overflow-hidden z-[70] flex flex-col">
@@ -53,7 +56,7 @@ export default function RadialView({ t, url }: RadialViewProps) {
       <AnimatePresence>
         {isLoading && (
           <motion.div
-            key={`radial-loading-${cacheBuster}`}
+            key="radial-loading-overlay"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
@@ -71,13 +74,13 @@ export default function RadialView({ t, url }: RadialViewProps) {
                   Raport Digital (RADIAL) MIS IT Al Uswah
                 </p>
                 <p className="text-[11px] text-gray-400">
-                  Sinkronisasi timestamp: {cacheBuster}
+                  Sinkronisasi timestamp: {sessionConfig.timestamp}
                 </p>
               </div>
 
               <div className="pt-2">
                 <a
-                  href={currentIframeSrc}
+                  href={sessionConfig.iframeSrc}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 text-xs font-semibold transition-colors shadow-2xs"
@@ -94,8 +97,7 @@ export default function RadialView({ t, url }: RadialViewProps) {
       {/* Embedded RADIAL iframe Layar Penuh Edge-to-Edge dengan URL Cache-Busted */}
       <iframe
         id="radial-iframe"
-        key={`radial-iframe-${cacheBuster}`}
-        src={currentIframeSrc}
+        src={sessionConfig.iframeSrc}
         title="RADIAL — Raport Digital MIS IT Al Uswah"
         onLoad={() => {
           setIsLoading(false);

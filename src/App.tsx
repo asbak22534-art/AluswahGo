@@ -126,6 +126,13 @@ export default function App() {
       const savedView = localStorage.getItem('currentView');
       const now = Date.now();
 
+      // Jangan mengunci aplikasi di halaman iframe penuh (radial / spmb) saat refresh / baru dibuka
+      if (savedView === 'radial' || savedView === 'spmb' || savedView === 'spmb-form') {
+        localStorage.setItem('currentView', 'home');
+        localStorage.setItem('lastActiveTime', now.toString());
+        return 'home';
+      }
+
       if (lastActiveStr) {
         const lastActive = parseInt(lastActiveStr, 10);
         if (!isNaN(lastActive) && now - lastActive > INACTIVITY_TIMEOUT_MS) {
@@ -274,9 +281,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (currentView === 'home' && window.location.hash) {
+      window.history.replaceState({ view: 'exit', appState: true }, '', '/');
+      window.history.pushState({ view: 'home', appState: true }, '', '/');
+      return;
+    }
     if (!window.history.state || !window.history.state.appState) {
       window.history.replaceState({ view: 'exit', appState: true }, '', '');
-      window.history.pushState({ view: currentView, appState: true }, '', `#${currentView}`);
+      window.history.pushState({ view: currentView, appState: true }, '', currentView === 'home' ? '/' : `#${currentView}`);
     }
   }, []);
 
@@ -883,14 +895,15 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (showNotifs) setShowNotifs(false);
-        if (selectedNotif) setSelectedNotif(null);
-        if (selectedPrestasi) setSelectedPrestasi(null);
-        if (selectedVideo) setSelectedVideo(null);
+        else if (selectedNotif) setSelectedNotif(null);
+        else if (selectedPrestasi) setSelectedPrestasi(null);
+        else if (selectedVideo) setSelectedVideo(null);
+        else if (currentView !== 'home') handleNavigate('home');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showNotifs, selectedNotif, selectedPrestasi, selectedVideo]);
+  }, [showNotifs, selectedNotif, selectedPrestasi, selectedVideo, currentView]);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
