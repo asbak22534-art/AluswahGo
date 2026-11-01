@@ -1,6 +1,6 @@
 {
-  "summary": "Rencana implementasi penghapusan header RadialView dan optimalisasi navigasi tombol kembali fisik HP & browser desktop untuk tampilan layar penuh RADIAL.",
-  "updatedAt": "2026-10-13T14:31:42.830794782Z",
-  "requestFeedback": true,
-  "userFacing": true
+  "summary":  "Rencana audit mendalam dan implementasi perbaikan masalah update/cache pada RADIAL:\n1. Analisis teknis penyebab scroll-down/pull-to-refresh gagal memperbarui iframe cross-origin.\n2. Penambahan mekanisme cache-buster otomatis (?t=timestamp) setiap kali halaman RADIAL dimuat.\n3. Penambahan tombol micro-floating minimalis dan elegan (Buka di Browser Luar & Muat Ulang Paksa) tanpa merusak tampilan layar penuh.\n4. Uji verifikasi dan kompilasi aplikasi.",
+  "updatedAt":  "2026-11-01T07:11:37.553113254Z",
+  "requestFeedback":  true,
+  "userFacing":  true
 }
